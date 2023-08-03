@@ -2,8 +2,6 @@
 import sensor, image, time, math
 from pyb import Pin
 
-'''常量定义'''
-white_background_size_min = 3000 # 白纸背景最小面积
 '''阈值定义'''
 thresholds_redpoint_base = [
 (48, 75, 36, 74, -15, 25), # 白板红光，方框比较小，但是不能跟踪黑色部分👍
@@ -14,9 +12,17 @@ thresholds_redpoint_blackline = [
 (0, 100, 15, 53, -30, 40), # 3号上午黑线红点👍
 ]
 thresholds_whitebackground = [
-(40, 78, -19, 4, -22, -3), # 3号上午白纸背景
-#(64, 83, -19, 4, -22, -3)
+# (40, 78, -19, 4, -22, -3), # 3号上午白纸背景
+(48, 68, -16, 27, -20, -1), # 3号下午白板背景
 ]
+'''常量定义'''
+white_background_size_min = 3000                                    # 白纸背景最小面积
+'''变量定义'''
+x1, y1, x2, y2, x3, y3, x4, y4 = 0, 0, 0, 0, 0, 0, 0 ,0             # 白纸背景坐标
+centerx, centery = 0, 0                                             # 白纸背景中心坐标
+px1, py1, px2, py2, px3, py3, px4, py4 = 0, 0, 0, 0, 0, 0, 0 ,0     # 铅笔线坐标
+rx, ry = 0, 0                                                       # 红点坐标
+mode = ''                                                           # 模式
 
 '''初始化摄像头'''
 sensor.reset()
@@ -34,7 +40,7 @@ clock = time.clock()
 def find_red_point():
     '''
     找到红点的坐标，返回x, y
-    
+
     如果使用第一种阈值就能找到红点，就使用第一种阈值，否则使用第二种阈值的均值
     '''
     x, y, sumx, sumy = 0, 0, 0, 0
@@ -65,8 +71,8 @@ def find_red_point():
             blob_0, blob_1, blob_2, blob_3 = int(blob_0 / len(blobs)), int(blob_1 / len(blobs)), int(blob_2 / len(blobs)), int(blob_3 / len(blobs))
             print('find red point: ', x, y)
             find_point = True
-        else:
-            print("find red point: not found")
+        # else:
+        #     print("find red point: not found")
     # 画出红点的外接矩形
     img.draw_rectangle(blob_0, blob_1, blob_2, blob_3)
     img.draw_cross(x, y)
@@ -76,7 +82,7 @@ def find_white_background():
     '''
     找到白纸背景，返回白纸背景的坐标
 
-    返回值：x1, y1, x2, y2, x3, y3, x4, y4（从左下方逆时针旋转）
+    返回值：x1, y1, x2, y2, x3, y3, x4, y4（从左上方顺时针旋转）
     '''
     find_background_times = 0
     x1, y1, x2, y2, x3, y3, x4, y4 = 0, 0, 0, 0, 0, 0, 0 ,0
@@ -102,7 +108,6 @@ def find_white_background():
     x2, y2 = int(x2 / find_background_times), int(y2 / find_background_times)
     x3, y3 = int(x3 / find_background_times), int(y3 / find_background_times)
     x4, y4 = int(x4 / find_background_times), int(y4 / find_background_times)
-    print(f'find white background: ({x1}, {y1}), ({x2}, {y2}), ({x3}, {y3}), ({x4}, {y4})')
     return x1, y1, x2, y2, x3, y3, x4, y4
 
 def calculate_pencil_line():
@@ -148,26 +153,27 @@ def wait_mode_btn():
     print('wait mode btn')
     #mode = 'trace_A4Rectangle'
 
-'''初始化各global位置变量'''
-x1, y1, x2, y2, x3, y3, x4, y4 = find_white_background()
-px1, py1, px2, py2, px3, py3, px4, py4 = calculate_pencil_line()
-centerx, centery = (x1 + x2 + x3 + x4) / 4, (y1 + y2 + y3 + y4) / 4
-rx, ry = find_red_point()
-mode = 'reset_'
+def process_init():
+    global x1, y1, x2, y2, x3, y3, x4, y4
+    global centerx, centery
+    global px1, py1, px2, py2, px3, py3, px4, py4
+    global rx, ry
+    '''初始化各global位置变量'''
+    print('process initing...')
+    x1, y1, x2, y2, x3, y3, x4, y4 = find_white_background()
+    print(f'find white background: ({x1}, {y1}), ({x2}, {y2}), ({x3}, {y3}), ({x4}, {y4})')
+    centerx, centery = int((x1 + x2 + x3 + x4) / 4), int((y1 + y2 + y3 + y4) / 4)
+    print(f'center: ({centerx}, {centery})')
+    px1, py1, px2, py2, px3, py3, px4, py4 = calculate_pencil_line()
+    print(f'calculate pencil line: ({px1}, {py1}), ({px2}, {py2}), ({px3}, {py3}), ({px4}, {py4})')
+    rx, ry = find_red_point()
+    print(f'find red point: ({rx}, {ry})')
+    mode = ''
+    print('process init done.')
+
+'''程序入口'''
+process_init()
 
 while(True):
-    wait_mode_btn()
-
-    if mode == 'reset':
-        reset(rx, ry)
-    elif mode == 'trace_border':
-        # trace_rectangle(x1, y1, x2, y2, x3, y3, x4, y4)
-        pass
-    elif mode == 'trace_A4Rectangle':
-        # trace_rectangle(find_A4_rectangle())
-        pass
-    else:
-        find_red_point()
-        #x1, y1, x2, y2, x3, y3, x4, y4 = find_white_background()
-        #print(calculate_pencil_line())
-        print(clock.fps())
+    # pass
+    find_red_point()
