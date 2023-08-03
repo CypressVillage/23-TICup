@@ -1,6 +1,7 @@
 # 主函数流程(红)
 import sensor, image, time, math
-from pyb import Pin
+from pyb import Pin, Servo
+from pid import PID
 
 '''阈值定义'''
 thresholds_redpoint_base = [
@@ -26,9 +27,17 @@ centerx, centery = 0, 0                                             # 白纸背�
 px1, py1, px2, py2, px3, py3, px4, py4 = 0, 0, 0, 0, 0, 0, 0 ,0     # 铅笔线坐标
 rx, ry = 0, 0                                                       # 红点坐标
 mode = ''                                                           # 模式
-'''引脚定义'''
 
-'''初始化外设'''
+'''初始化PID'''
+pid_pan = PID(p=0.1, i=0.01, imax=90) # 舵机水平方向PID
+pid_tilt = PID(p=0.1, i=0.01, imax=90) # 舵机垂直方向PID
+
+'''初始化舵机'''
+pan_servo = Servo(1) # P7
+tilt_servo = Servo(2) # P8
+# TODO：如果有时间去调
+# pan_servo.calibration(500, 2500, 500)
+# tilt_servo.calibration(500, 2500, 500)
 
 '''初始化摄像头'''
 sensor.reset()
@@ -132,12 +141,20 @@ def find_A4_rectangle():
     return 0,1,2,3,4,5,6,7
 
 def move2point(x, y):
-    '''让px,py移动到x,y
+    '''
+    让rx,ry移动到x,y
 
-    这里实现的时候应该要记得更新px,py的值'''
-    global px, py
-    # pid(x, y, px, py)
+    '''
+    rx, ry = find_red_point()
     print('move to point: ', x, y)
+    pan_error, tilt_error = rx - x, ry - y
+    print('pan_error, tilt_error: ', pan_error, tilt_error)
+
+    pan_output = pid_pan.get_pid(pan_error)
+    tilt_output = pid_tilt.get_pid(tilt_error)
+
+    pan_servo.angle(pan_servo.angle() + pan_output)
+    tilt_servo.angle(tilt_servo.angle() - tilt_output)
     return
 
 def trace_rectangle(x1, y1, x2, y2, x3, y3, x4, y4):
@@ -176,4 +193,4 @@ def process_init():
 process_init()
 
 while(True):
-    # pass
+    pass
