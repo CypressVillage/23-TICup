@@ -1,6 +1,6 @@
 # 主函数流程(红)
 import sensor, image, time, math
-from pyb import Pin, Servo
+from pyb import Pin, Servo, ExtInt, delay
 from pid import PID
 
 '''阈值定义'''
@@ -21,6 +21,8 @@ thresholds_whitebackground = [
 ]
 '''常量定义'''
 white_background_size_min = 3000                                    # 白纸背景最小面积
+pan_servo_default_angle = 8                                         # 舵机水平方向默认角度
+tilt_servo_default_angle = -27                                      # 舵机垂直方向默认角度
 '''变量定义'''
 x1, y1, x2, y2, x3, y3, x4, y4 = 0, 0, 0, 0, 0, 0, 0 ,0             # 白纸背景坐标
 centerx, centery = 0, 0                                             # 白纸背景中心坐标
@@ -31,6 +33,10 @@ mode = ''                                                           # 模式
 '''初始化PID'''
 pid_pan = PID(p=0.1, i=0.01, imax=90) # 舵机水平方向PID
 pid_tilt = PID(p=0.1, i=0.01, imax=90) # 舵机垂直方向PID
+
+'''初始化按键'''
+p_reset = Pin('P1', Pin.IN, Pin.PULL_DOWN)
+p_start = Pin('P2', Pin.IN, Pin.PULL_DOWN)
 
 '''初始化舵机'''
 pan_servo = Servo(1) # P7
@@ -51,6 +57,21 @@ sensor.skip_frames(20) # 丢失一些帧，等待摄像头初始化完成
 sensor.set_auto_whitebal(False) #如果使用彩图读取，则白平衡需要关闭，即sensor.set_auto_whitebal(False)
 clock = time.clock()
 
+def callback_reset(line):
+    delay(1000)
+    tilt_servo.angle(90)
+    pan_servo.angle(63)
+    print("一次中断完成1111")
+
+def callback_start(line):
+    delay(1000)
+    tilt_servo.angle(0)
+    pan_servo.angle(83)
+    print("一次中断完成2222")
+
+ext_reset = ExtInt(p_reset, ExtInt.IRQ_RISING, Pin.PULL_DOWN, callback_reset)
+ext_start = ExtInt(p_start, ExtInt.IRQ_RISING, Pin.PULL_DOWN, callback_start)
+
 
 def find_red_point():
     '''
@@ -62,13 +83,13 @@ def find_red_point():
     find_point = False
     blobs = []
     while not find_point:
-        img = sensor.snapshot()
         clock.tick() # 用于计算FPS
+        img = sensor.snapshot()
         # 用第一种阈值找红点
         blobs = img.find_blobs(thresholds_redpoint_base)
         if blobs and blobs[0]:
             x, y = blobs[0].cx(), blobs[0].cy()
-            if x < x1 or x > x2 or y < y2 or y > y3: continue
+            if not (x1 <= x <= x2 and y2 <= y <= y3): continue
             break
 
         # 用第二种阈值找红点
@@ -76,7 +97,7 @@ def find_red_point():
         if blobs:
             nblob = 0
             for blob in blobs:
-                if blob[5] < x1 or blob[5] > x2 or blob[6] < y2 or blob[6] > y3: continue
+                if not (x1 <= blob[5] <= x2 and y2 <= blob[6] <= y3): continue
                 nblob += 1
                 sumx += blob[5]
                 sumy += blob[6]
@@ -137,8 +158,16 @@ def calculate_pencil_line():
 
 def find_A4_rectangle():
     '''找到A4纸矩形，返回矩形4点的坐标'''
-    # return x1, y1, x2, y2, x3, y3, x4, y4
-    return 0,1,2,3,4,5,6,7
+    clock.tick()
+    img = sensor.snapshot()
+    for r in img.find_rects(threshold = 45000):
+        img.draw_rectangle(r.rect(), color = (255, 0, 0))
+        for p in r.corners(): 
+            img.draw_circle(p[0], p[1], 5, color = (0, 255, 0))  #在四个角上画圆
+
+    # 找到A4纸的四个角
+    return r.corners()[0].x(), r.corners()[0].y(), r.corners()[1].x(), r.corners()[1].y(), r.corners()[2].x(), r.corners()[2].y(), r.corners()[3].x(), r.corners()[3].y()
+
 
 def move2point(x, y):
     '''
@@ -166,6 +195,16 @@ def trace_rectangle(x1, y1, x2, y2, x3, y3, x4, y4):
 def move2center():
     move2point(centerx, centery)
 
+def servo_reset():
+    '''
+    舵机复位，如果中心点已知，则移动到中心点，否则移动到(0, 0)
+    '''
+    if centerx == 0 and centery == 0:
+        pan_servo.angle()
+        tilt_servo.angle()
+    else:
+        move2center()
+
 def wait_mode_btn():
     '''等待模式按钮，切换模式'''
     global mode
@@ -188,9 +227,12 @@ def process_init():
     print(f'find red point: ({rx}, {ry})')
     mode = ''
     print('process init done.')
+    servo_reset()
 
 '''程序入口'''
 process_init()
 
+
+move2center()
 while(True):
     pass
