@@ -6,9 +6,10 @@ from pyb import Pin
 white_background_size_min = 3000 # 白纸背景最小面积
 '''阈值定义'''
 thresholds_redpoint = [
+(48, 75, 36, 74, -15, 25), # 白板红光，方框比较小，但是不能跟踪黑色部分👍
+(0, 100, 15, 53, -30, 40), # 3号上午黑线红点👍
 #(95, 100, -5, 5, -5, 5), # 全白
 #(0, 100, 21, 127, -38, 127), # 白板黑胶带红光，都可以跟踪，但是方框比较大
-(48, 75, 36, 74, -15, 25), # 白板红光，方框比较小，但是不能跟踪黑色部分
 ]
 thresholds_whitebackground = [
 (40, 78, -19, 4, -22, -3), # 3号上午白纸背景
@@ -35,7 +36,8 @@ def find_red_point():
     blobs = []
     while not find_point:
         img = sensor.snapshot()
-        blobs = img.find_blobs(thresholds_whitebackground)
+        clock.tick() # 用于计算FPS
+        blobs = img.find_blobs(thresholds_redpoint)
         if blobs:
             for blob in blobs:
                 img.draw_rectangle(blob[0:4]) # rect
@@ -144,6 +146,7 @@ while(True):
         # trace_rectangle(find_A4_rectangle())
         pass
     else:
-        # find_red_point()
-        x1, y1, x2, y2, x3, y3, x4, y4 = find_white_background()
-        print(calculate_pencil_line())
+        find_red_point()
+        #x1, y1, x2, y2, x3, y3, x4, y4 = find_white_background()
+        #print(calculate_pencil_line())
+        print(clock.fps())
