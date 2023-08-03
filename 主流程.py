@@ -69,10 +69,10 @@ def find_red_point():
                 blob_3 += blob[3]
             x, y = int(sumx / len(blobs)), int(sumy / len(blobs))
             blob_0, blob_1, blob_2, blob_3 = int(blob_0 / len(blobs)), int(blob_1 / len(blobs)), int(blob_2 / len(blobs)), int(blob_3 / len(blobs))
-            print('find red point: ', x, y)
             find_point = True
         # else:
         #     print("find red point: not found")
+    print('find red point: ', x, y)
     # 画出红点的外接矩形
     img.draw_rectangle(blob_0, blob_1, blob_2, blob_3)
     img.draw_cross(x, y)
