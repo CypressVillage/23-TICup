@@ -46,7 +46,6 @@ def find_red_point():
     x, y, sumx, sumy = 0, 0, 0, 0
     find_point = False
     blobs = []
-    # blob_0, blob_1, blob_2, blob_3 = 0, 0, 0, 0
     print("find red point: start")
     while not find_point:
         img = sensor.snapshot()
@@ -56,7 +55,6 @@ def find_red_point():
         if blobs and blobs[0]:
             x, y = blobs[0].cx(), blobs[0].cy()
             if x < x1 or x > x2 or y < y2 or y > y3: continue
-            # blob_0, blob_1, blob_2, blob_3 = blobs[0][0], blobs[0][1], blobs[0][2], blobs[0][3]
             break
 
         # 用第二种阈值找红点
@@ -68,19 +66,10 @@ def find_red_point():
                 nblob += 1
                 sumx += blob[5]
                 sumy += blob[6]
-                # blob_0 += blob[0]
-                # blob_1 += blob[1]
-                # blob_2 += blob[2]
-                # blob_3 += blob[3]
             if nblob == 0: continue
             x, y = int(sumx / nblob), int(sumy / nblob)
-            # blob_0, blob_1, blob_2, blob_3 = int(blob_0 / len(blobs)), int(blob_1 / len(blobs)), int(blob_2 / len(blobs)), int(blob_3 / len(blobs))
             find_point = True
-        # else:
-        #     print("find red point: not found")
     print('find red point: ', x, y)
-    # 画出红点的外接矩形
-    # img.draw_rectangle(blob_0, blob_1, blob_2, blob_3)
     img.draw_cross(x, y)
     return x, y
 
@@ -157,7 +146,6 @@ def wait_mode_btn():
     '''等待模式按钮，切换模式'''
     global mode
     print('wait mode btn')
-    #mode = 'trace_A4Rectangle'
 
 def process_init():
     global x1, y1, x2, y2, x3, y3, x4, y4
