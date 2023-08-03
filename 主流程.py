@@ -11,7 +11,8 @@ thresholds_redpoint = [
 (48, 75, 36, 74, -15, 25), # 白板红光，方框比较小，但是不能跟踪黑色部分
 ]
 thresholds_whitebackground = [
-(40, 78, -19, 4, -22, -3)
+(40, 78, -19, 4, -22, -3), # 3号上午白纸背景
+#(64, 83, -19, 4, -22, -3)
 ]
 
 '''初始化摄像头'''
@@ -19,10 +20,10 @@ sensor.reset()
 #sensor.set_pixformat(sensor.GRAYSCALE)
 sensor.set_pixformat(sensor.RGB565)
 sensor.set_framesize(sensor.QQVGA)
-sensor.set_windowing((240, 240)) # 240x240 center pixels of VGA
-sensor.set_auto_gain(False) # must be turned off for color tracking
-sensor.skip_frames(20)
-#sensor.set_auto_exposure(False, 1400)
+sensor.set_windowing((240, 240)) # 240x240 center pixels of QQVGA
+sensor.set_auto_gain(False) # 如果使用彩图读取，则自动增益需要关闭
+sensor.skip_frames(20) # 丢失一些帧，等待摄像头初始化完成
+#sensor.set_auto_exposure(False, 1400) # 关闭自动曝光，这个操作会导致图像变暗
 sensor.set_auto_whitebal(False) #如果使用彩图读取，则白平衡需要关闭，即sensor.set_auto_whitebal(False)
 clock = time.clock()
 
@@ -49,7 +50,11 @@ def find_red_point():
     return x, y
 
 def find_white_background():
-    '''找到白纸背景，返回白纸背景的坐标'''
+    '''
+    找到白纸背景，返回白纸背景的坐标
+
+    返回值：x1, y1, x2, y2, x3, y3, x4, y4（从左下方逆时针旋转）
+    '''
     find_background_times = 0
     x1, y1, x2, y2, x3, y3, x4, y4 = 0, 0, 0, 0, 0, 0, 0 ,0
     while find_background_times < 5:
@@ -79,7 +84,19 @@ def find_white_background():
 
 def calculate_pencil_line():
     '''铅笔线是50x50，外边框是60x60，根据外边框计算铅笔线'''
-    pass
+    dx = (x2 - x1) / 12
+    dy = (y2 - y1) / 12
+    px1, py1 = int(x1 + dx), int(y1 + dy)
+    px2, py2 = int(x2 - dx), int(y2 + dy)
+    px3, py3 = int(x3 - dx), int(y3 - dy)
+    px4, py4 = int(x4 + dx), int(y4 - dy)
+    # 画
+    img = sensor.snapshot()
+    img.draw_line((px1, py1, px2, py2))
+    img.draw_line((px2, py2, px3, py3))
+    img.draw_line((px3, py3, px4, py4))
+    img.draw_line((px4, py4, px1, py1))
+    return px1, py1, px2, py2, px3, py3, px4, py4
 
 def find_A4_rectangle():
     '''找到A4纸矩形，返回矩形4点的坐标'''
@@ -108,17 +125,18 @@ def wait_mode_btn():
     print('wait mode btn')
     #mode = 'trace_A4Rectangle'
 
-# 初始化各global位置变量
+'''初始化各global位置变量'''
 x1, y1, x2, y2, x3, y3, x4, y4 = find_white_background()
+px1, py1, px2, py2, px3, py3, px4, py4 = calculate_pencil_line()
 centerx, centery = (x1 + x2 + x3 + x4) / 4, (y1 + y2 + y3 + y4) / 4
-px, py = find_red_point()
+rx, ry = find_red_point()
 mode = 'reset_'
 
 while(True):
     wait_mode_btn()
 
     if mode == 'reset':
-        reset(px, py)
+        reset(rx, ry)
     elif mode == 'trace_border':
         # trace_rectangle(x1, y1, x2, y2, x3, y3, x4, y4)
         pass
@@ -127,4 +145,5 @@ while(True):
         pass
     else:
         # find_red_point()
-        find_white_background()
+        x1, y1, x2, y2, x3, y3, x4, y4 = find_white_background()
+        print(calculate_pencil_line())
