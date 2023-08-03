@@ -11,6 +11,9 @@ thresholds_redpoint_base = [
 thresholds_redpoint_blackline = [
 (0, 100, 15, 53, -30, 40), # 3号上午黑线红点👍
 ]
+thresholds_greenpoint_base = [
+(65, 100, -79, 6, -2, 85)
+]
 thresholds_whitebackground = [
 # (40, 78, -19, 4, -22, -3), # 3号上午白纸背景
 (48, 68, -16, 27, -20, -1), # 3号下午白板背景
@@ -32,7 +35,7 @@ sensor.set_framesize(sensor.QQVGA)
 sensor.set_windowing((240, 240)) # 240x240 center pixels of QQVGA
 sensor.set_auto_gain(False) # 如果使用彩图读取，则自动增益需要关闭
 sensor.skip_frames(20) # 丢失一些帧，等待摄像头初始化完成
-#sensor.set_auto_exposure(False, 1400) # 关闭自动曝光，这个操作会导致图像变暗
+# sensor.set_auto_exposure(False, 500) # 关闭自动曝光，这个操作会导致图像变暗
 sensor.set_auto_whitebal(False) #如果使用彩图读取，则白平衡需要关闭，即sensor.set_auto_whitebal(False)
 clock = time.clock()
 
@@ -46,7 +49,6 @@ def find_red_point():
     x, y, sumx, sumy = 0, 0, 0, 0
     find_point = False
     blobs = []
-    print("find red point: start")
     while not find_point:
         img = sensor.snapshot()
         clock.tick() # 用于计算FPS
