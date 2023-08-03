@@ -26,6 +26,9 @@ centerx, centery = 0, 0                                             # 白纸背�
 px1, py1, px2, py2, px3, py3, px4, py4 = 0, 0, 0, 0, 0, 0, 0 ,0     # 铅笔线坐标
 rx, ry = 0, 0                                                       # 红点坐标
 mode = ''                                                           # 模式
+'''引脚定义'''
+
+'''初始化外设'''
 
 '''初始化摄像头'''
 sensor.reset()
@@ -130,10 +133,12 @@ def find_A4_rectangle():
 
 def move2point(x, y):
     '''让px,py移动到x,y
-    用法: px, py = move2point(x, y)'''
+
+    这里实现的时候应该要记得更新px,py的值'''
+    global px, py
     # pid(x, y, px, py)
     print('move to point: ', x, y)
-    return x, y
+    return
 
 def trace_rectangle(x1, y1, x2, y2, x3, y3, x4, y4):
     move2point(x1, y1)
@@ -141,7 +146,7 @@ def trace_rectangle(x1, y1, x2, y2, x3, y3, x4, y4):
     move2point(x3, y3)
     move2point(x4, y4)
 
-def reset(px, py):
+def move2center():
     move2point(centerx, centery)
 
 def wait_mode_btn():
@@ -172,4 +177,3 @@ process_init()
 
 while(True):
     # pass
-    find_red_point()
