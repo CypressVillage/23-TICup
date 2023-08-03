@@ -46,7 +46,8 @@ def find_red_point():
     x, y, sumx, sumy = 0, 0, 0, 0
     find_point = False
     blobs = []
-    blob_0, blob_1, blob_2, blob_3 = 0, 0, 0, 0
+    # blob_0, blob_1, blob_2, blob_3 = 0, 0, 0, 0
+    print("find red point: start")
     while not find_point:
         img = sensor.snapshot()
         clock.tick() # 用于计算FPS
@@ -54,27 +55,32 @@ def find_red_point():
         blobs = img.find_blobs(thresholds_redpoint_base)
         if blobs and blobs[0]:
             x, y = blobs[0].cx(), blobs[0].cy()
-            blob_0, blob_1, blob_2, blob_3 = blobs[0][0], blobs[0][1], blobs[0][2], blobs[0][3]
+            if x < x1 or x > x2 or y < y2 or y > y3: continue
+            # blob_0, blob_1, blob_2, blob_3 = blobs[0][0], blobs[0][1], blobs[0][2], blobs[0][3]
             break
 
         # 用第二种阈值找红点
         blobs = img.find_blobs(thresholds_redpoint_blackline)
         if blobs:
+            nblob = 0
             for blob in blobs:
+                if blob[5] < x1 or blob[5] > x2 or blob[6] < y2 or blob[6] > y3: continue
+                nblob += 1
                 sumx += blob[5]
                 sumy += blob[6]
-                blob_0 += blob[0]
-                blob_1 += blob[1]
-                blob_2 += blob[2]
-                blob_3 += blob[3]
-            x, y = int(sumx / len(blobs)), int(sumy / len(blobs))
-            blob_0, blob_1, blob_2, blob_3 = int(blob_0 / len(blobs)), int(blob_1 / len(blobs)), int(blob_2 / len(blobs)), int(blob_3 / len(blobs))
+                # blob_0 += blob[0]
+                # blob_1 += blob[1]
+                # blob_2 += blob[2]
+                # blob_3 += blob[3]
+            if nblob == 0: continue
+            x, y = int(sumx / nblob), int(sumy / nblob)
+            # blob_0, blob_1, blob_2, blob_3 = int(blob_0 / len(blobs)), int(blob_1 / len(blobs)), int(blob_2 / len(blobs)), int(blob_3 / len(blobs))
             find_point = True
         # else:
         #     print("find red point: not found")
     print('find red point: ', x, y)
     # 画出红点的外接矩形
-    img.draw_rectangle(blob_0, blob_1, blob_2, blob_3)
+    # img.draw_rectangle(blob_0, blob_1, blob_2, blob_3)
     img.draw_cross(x, y)
     return x, y
 
