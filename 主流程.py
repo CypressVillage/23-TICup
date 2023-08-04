@@ -29,7 +29,7 @@ thresholds_whitebackground = [
 '''常量定义'''
 corr_val = 1.6                                                     # 畸变系数
 white_background_size_min = 3000                                    # 白纸背景最小面积
-pan_servo_default_angle = 10                                         # 舵机水平方向默认角度
+pan_servo_default_angle = 18                                         # 舵机水平方向默认角度
 tilt_servo_default_angle = -35                                      # 舵机垂直方向默认角度
 pan_servo_angle_limit = [-20, 25]
 tilt_servo_angle_limit = [-40, -20]
@@ -49,8 +49,8 @@ mode = ''                                                           # 模式
 #pid_tilt = PID(p=0.1, i=0.1, d=0, imax=90) # 舵机垂直方向PID
 
 # 4号下午5点半调参
-pid_pan = PID(p=0.1, i=0.05, d=0, imax=90) # 舵机水平方向PID
-pid_tilt = PID(p=0.1, i=0.0, d=0, imax=90) # 舵机垂直方向PID
+pid_pan = PID(p=0.13, i=0.07, d=0.005, imax=90) # 舵机水平方向PID
+pid_tilt = PID(p=0.13, i=0.07, d=0, imax=90) # 舵机垂直方向PID
 
 '''初始化按键'''
 p_reset = Pin('P1', Pin.IN, Pin.PULL_DOWN)
@@ -219,10 +219,10 @@ def servo_step(pan_error, tilt_error):
     delta_x = pan_servo.angle() + pan_output
     delta_y = tilt_servo.angle() - tilt_output
     if pan_servo_angle_limit[0] < delta_x <= pan_servo_angle_limit[1]:
-        #pan_servo.angle(delta_x, 5)
+        pan_servo.angle(delta_x)
         print('x set angle:', pan_output)
     if tilt_servo_angle_limit[0] < delta_y <= tilt_servo_angle_limit[1]:
-        tilt_servo.angle(delta_y, 5)
+        tilt_servo.angle(delta_y)
         print('y set angle:', tilt_output)
     delay(50)
 
@@ -238,7 +238,7 @@ def move2point(x, y):
     while(True):
         rx, ry = find_red_point()
         pan_error, tilt_error = rx - x, ry - y
-        pan_error = 0 # 只调y用
+        #pan_error = 0 # 只调y用
         if (-pid_x_limit < pan_error <= pid_x_limit) and (-pid_y_limit < tilt_error <= pid_y_limit):
             break
         servo_step(pan_error, tilt_error)
