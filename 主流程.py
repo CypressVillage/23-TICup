@@ -227,21 +227,33 @@ def servo_step(pan_error, tilt_error):
     delay(50)
 
 
-pid_x_limit = 0                                                     # PID允许的x方向误差
+pid_x_limit = 2                                                     # PID允许的x方向误差
 pid_y_limit = 2                                                     # PID允许的y方向误差
 def move2point(x, y):
     '''
     让rx,ry移动到x,y
 
     '''
+    #此处修改使得移动变为分段移动
+    step_tot = 100 #将整个目标移动分为100段
+    step_n = 0  #临时存储用。记录当前运行到第几段了
+
+
     print('move to point: ', x, y)
+    origin_x, origin_y = find_red_point() #先找到开始运动之前的红点位置
     while(True):
         rx, ry = find_red_point()
-        pan_error, tilt_error = rx - x, ry - y
+        target_x = (x - origin_x) / step_tot * step_n
+        target_y = (y - origin_y) / step_tot * step_n
+        pan_error = ry - target_y
+        tilt_error = rx - target_x
         #pan_error = 0 # 只调y用
-        if (-pid_x_limit < pan_error <= pid_x_limit) and (-pid_y_limit < tilt_error <= pid_y_limit):
+        if ((-pid_x_limit < pan_error <= pid_x_limit) and (-pid_y_limit < tilt_error <= pid_y_limit)):
             break
         servo_step(pan_error, tilt_error)
+        if(step_n < step_tot):    
+            step_n += 1
+
 
 def trace_rectangle(x1, y1, x2, y2, x3, y3, x4, y4):
     move2point(x1, y1)
