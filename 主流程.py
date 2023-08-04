@@ -18,6 +18,9 @@ thresholds_redpoint_blackline = [
 thresholds_greenpoint_base = [
 (65, 100, -79, 6, -2, 85)
 ]
+thresholds_greenpoint_blackline = [
+(0, 100, -128, 127, -128, 127),
+]
 thresholds_whitebackground = [
 # (40, 78, -19, 4, -22, -3), # 3号上午白纸背景
 # (48, 68, -16, 27, -20, -1), # 3号下午白板背景
@@ -148,6 +151,42 @@ def find_red_point():
     img.draw_cross(int(x), int(y))
     return x, y
 
+def find_green_point():
+    '''
+    找到绿点的坐标，返回x, y
+
+    如果使用第一种阈值就能找到绿点，就使用第一种阈值，否则使用第二种阈值的均值
+    '''
+    x, y, sumx, sumy = 0, 0, 0, 0
+    find_point = False
+    blobs = []
+    print('finding green point')
+    while not find_point:
+        clock.tick() # 用于计算FPS
+        img = sensor.snapshot().lens_corr(corr_val)
+        # 用第一种阈值找绿点
+        blobs = img.find_blobs(thresholds_greenpoint_base)
+        if blobs and blobs[0]:
+            x, y = blobs[0].cx(), blobs[0].cy()
+            if not (x-5 <= x <= x2+5 and y2-10 <= y <= y3+10): continue
+            break
+
+        # 用第二种阈值找绿点
+        blobs = img.find_blobs(thresholds_greenpoint_blackline)
+        if blobs:
+            nblob = 0
+            for blob in blobs:
+                if not (x1 <= blob[5] <= x2 and y2 <= blob[6] <= y3): continue
+                nblob += 1
+                sumx += blob[5]
+                sumy += blob[6]
+            if nblob == 0: continue
+            x, y = sumx / nblob, sumy / nblob
+            find_point = True
+    print('find green point: ', x, y)
+    img.draw_cross(int(x), int(y))
+    return x, y
+
 def find_white_background():
     '''
     找到白纸背景，返回白纸背景的坐标
@@ -214,6 +253,7 @@ def find_A4_rectangle():
                     rtn.append(p[0])
                     rtn.append(p[1])
                     img.draw_circle(p[0], p[1], 5, color = (0, 255, 0))  #在四个角上画圆
+                    #pass
             break
 
     return rtn
@@ -302,6 +342,14 @@ def process_init():
     mode = ''
     print('process init done.')
 
+def trace_green_point():
+    while(True):
+        rx, ry = find_green_point()
+        pan_error, tilt_error = rx - x, ry - y
+        if (-pid_x_limit <= pan_error <= pid_x_limit) and (-pid_y_limit <= tilt_error <= pid_y_limit):
+            break
+        servo_step(pan_error, tilt_error)
+
 def task_1():
     move2center()
 
@@ -366,13 +414,13 @@ def auto_correct_program():
 '''程序入口'''
 process_init()
 #calculate_pencil_line()
-task_1()
+#task_1()
 #task_34()
 print('done')
 
 while(True):
     #find_white_background()
-    #find_red_point()
+    find_green_point()
     #find_A4_rectangle()
     #move2center()
     pass
