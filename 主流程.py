@@ -5,7 +5,9 @@ from pid import PID
 
 '''阈值定义'''
 thresholds_redpoint_base = [
-(48, 75, 36, 74, -15, 25), # 白板红光，方框比较小，但是不能跟踪黑色部分👍
+(0, 100, 18, 62, -128, 127)
+#(48, 75, 36, 74, -15, 25), # 白板红光，方框比较小，但是不能跟踪黑色部分👍
+#(68, 86, 12, 59, -95, 112), # 4号上午实测
 #(95, 100, -5, 5, -5, 5), # 全白
 #(0, 100, 21, 127, -38, 127), # 白板黑胶带红光，都可以跟踪，但是方框比较大
 ]
@@ -19,12 +21,13 @@ thresholds_whitebackground = [
 # (40, 78, -19, 4, -22, -3), # 3号上午白纸背景
 # (48, 68, -16, 27, -20, -1), # 3号下午白板背景
 # (46, 79, -23, -6, -5, 5),   # 4号上午残破openmv
-(32, 47, -9, 0, -11, 4)
+#(49, 100, -128, 127, -128, 127), # 隔一段时间准
+(58, 79, -128, 127, -128, 127) # 开始几帧准
 ]
 '''常量定义'''
 white_background_size_min = 3000                                    # 白纸背景最小面积
-pan_servo_default_angle = 8                                         # 舵机水平方向默认角度
-tilt_servo_default_angle = -37                                      # 舵机垂直方向默认角度
+pan_servo_default_angle = 13                                         # 舵机水平方向默认角度
+tilt_servo_default_angle = -30                                      # 舵机垂直方向默认角度
 pan_servo_angle_limit = [-20, 25]
 tilt_servo_angle_limit = [-40, -20]
 '''变量定义'''
@@ -35,16 +38,17 @@ rx, ry = 0, 0                                                       # 红点坐�
 mode = ''                                                           # 模式
 
 '''初始化PID'''
-pid_pan = PID(p=0.07, i=0, d=0, imax=90) # 舵机水平方向PID
-pid_tilt = PID(p=0.03, i=0, d=0.00, imax=90) # 舵机垂直方向PID
+pid_pan = PID(p=0.07, i=0.02, d=0, imax=90) # 舵机水平方向PID
+pid_tilt = PID(p=0.07, i=0.15, d=0.02, imax=90) # 舵机垂直方向PID
+#pid_tilt = PID(p=0.03, i=0.0, d=0.0, imax=90) # 舵机垂直方向PID
 
 '''初始化按键'''
 p_reset = Pin('P1', Pin.IN, Pin.PULL_DOWN)
 p_start = Pin('P2', Pin.IN, Pin.PULL_DOWN)
 
 '''初始化舵机'''
-tilt_servo = Servo(1) # P8竖直
-pan_servo = Servo(2) # P7水平
+tilt_servo = Servo(2) # P8竖直
+pan_servo = Servo(1) # P7水平
 # TODO：如果有时间去调
 # pan_servo.calibration(500, 2500, 500)
 # tilt_servo.calibration(500, 2500, 500)
@@ -96,7 +100,7 @@ def find_red_point():
         blobs = img.find_blobs(thresholds_redpoint_base)
         if blobs and blobs[0]:
             x, y = blobs[0].cx(), blobs[0].cy()
-            if not (x1 <= x <= x2 and y2 <= y <= y3): continue
+            if not (x-5 <= x <= x2+5 and y2-10 <= y <= y3+10): continue
             break
 
         # 用第二种阈值找红点
@@ -190,14 +194,21 @@ def servo_step(pan_error, tilt_error):
     print('pan_error, tilt_error: ', pan_error, tilt_error)
     pan_output = pid_pan.get_pid(pan_error, 1)
     tilt_output = pid_tilt.get_pid(tilt_error, 1)
+
     print('delta angle(pan_output, tilt_output): ', pan_output, tilt_output)
-    pan_servo.angle(pan_servo.angle() - pan_output)
-    tilt_servo.angle(tilt_servo.angle() + tilt_output)
+    delta_x = pan_servo.angle() - pan_output
+    delta_y = tilt_servo.angle() + tilt_output
+    if pan_servo_angle_limit[0] < delta_x <= pan_servo_angle_limit[1]:
+        pan_servo.angle(delta_x)
+        print('x set angle:', pan_output)
+    if tilt_servo_angle_limit[0] < delta_y <= tilt_servo_angle_limit[1]:
+        tilt_servo.angle(delta_y)
+        print('y set angle:', tilt_output)
     delay(50)
 
 
-pid_x_limit = 3                                                     # PID允许的x方向误差
-pid_y_limit = 3                                                     # PID允许的y方向误差
+pid_x_limit = 1                                                     # PID允许的x方向误差
+pid_y_limit = 1                                                     # PID允许的y方向误差
 def move2point(x, y):
     '''
     让rx,ry移动到x,y
@@ -241,7 +252,7 @@ def process_init():
     global centerx, centery
     global px1, py1, px2, py2, px3, py3, px4, py4
     global rx, ry
-    servo_reset() # 舵机复位
+    #servo_reset() # 舵机复位
     '''初始化各global位置变量'''
     print('process initing...')
     x1, y1, x2, y2, x3, y3, x4, y4 = find_white_background()
@@ -256,14 +267,18 @@ def process_init():
 process_init()
 
 
-while(True):
-    #process_init()
-    move2center()
+move2center()
+#tx, ty = find_red_point()
+#move2point(tx,ty-5)
+print('done')
+#while(True):
+    #find_white_background()
+    ##find_red_point()
+    #move2center()
+
 #move2center()
 #move2center()
 #move2center()
 #move2center()
 #move2center()
 
-    #find_white_background()
-    #pass
