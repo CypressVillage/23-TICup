@@ -72,30 +72,11 @@ p_stop = Pin('P3', Pin.IN, Pin.PULL_UP)
 p_black = Pin('P4', Pin.IN, Pin.PULL_UP)
 
 def callback_reset(line):
-    delay(1000)
-
+    task_1_open_circle()
     print("一次中断完成1111")
 
 def callback_start(line):
-    delay(1000)
-    pan_servo.angle(-33,100)
-    delay(1000)
-    #tilt_servo.angle(-54,100)
-    #delay(2500)
-    #pan_servo.angle(-34,1000)
-    #delay(3000)
-    tilt_servo.angle(-57,100)
-    delay(1000)
-    pan_servo.angle(-59.5,100)
-    delay(1000)
-    tilt_servo.angle(-31,100)
-    delay(1000)
-    pan_servo.angle(-33,100)
-    delay(1000)
-    tilt_servo.angle(-57,100)
-    delay(1000)
-
-
+    task_2_open_circle()
     print("一次中断完成2222")
 
 def callback_stop(line):
@@ -342,13 +323,26 @@ def task_1_open_circle():
     '''
     任务1开环
     '''
-    pass
+    pan_servo.angle(-47,100)
+    tilt_servo.angle(-44,100)
 
 def task_2_open_circle():
     '''
     任务2开环
     '''
-    pass
+    delay(1000)
+    pan_servo.angle(-33,100)
+    delay(1000)
+    tilt_servo.angle(-57,100)
+    delay(1000)
+    pan_servo.angle(-59.5,100)
+    delay(1000)
+    tilt_servo.angle(-31,100)
+    delay(1000)
+    pan_servo.angle(-33,100)
+    delay(1000)
+    tilt_servo.angle(-57,100)
+    delay(1000)
 
 def the_position_is_ok():
     '''
@@ -374,38 +368,11 @@ def auto_correct_program():
 #calculate_pencil_line()
 #task_1()
 #task_2()
-#tx, ty = find_red_point()
-#move2point(tx,ty-5)
-pan_servo.angle(pan_servo_default_angle,1000)
-tilt_servo.angle(tilt_servo_default_angle,1000)
+task_1_open_circle()
 print('done')
-#delay(1000)
-#pan_servo.angle(-33,100)
-#delay(1000)
-##tilt_servo.angle(-54,100)
-##delay(2500)
-##pan_servo.angle(-34,1000)
-##delay(3000)
-#tilt_servo.angle(-57,100)
-#delay(1000)
-#pan_servo.angle(-59.5,100)
-#delay(1000)
-#tilt_servo.angle(-31,100)
-#delay(1000)
-#pan_servo.angle(-33,100)
-#delay(1000)
-#tilt_servo.angle(-57,100)
-#delay(1000)
-while(True):
 
+while(True):
     #find_white_background()
     #find_red_point()
     #move2center()
     pass
-
-#move2center()
-#move2center()
-#move2center()
-#move2center()
-#move2center()
-
