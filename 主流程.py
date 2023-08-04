@@ -17,12 +17,14 @@ thresholds_greenpoint_base = [
 ]
 thresholds_whitebackground = [
 # (40, 78, -19, 4, -22, -3), # 3号上午白纸背景
-(48, 68, -16, 27, -20, -1), # 3号下午白板背景
+# (48, 68, -16, 27, -20, -1), # 3号下午白板背景
+# (46, 79, -23, -6, -5, 5),   # 4号上午残破openmv
+(32, 47, -9, 0, -11, 4)
 ]
 '''常量定义'''
 white_background_size_min = 3000                                    # 白纸背景最小面积
 pan_servo_default_angle = 8                                         # 舵机水平方向默认角度
-tilt_servo_default_angle = -27                                      # 舵机垂直方向默认角度
+tilt_servo_default_angle = -34                                      # 舵机垂直方向默认角度
 '''变量定义'''
 x1, y1, x2, y2, x3, y3, x4, y4 = 0, 0, 0, 0, 0, 0, 0 ,0             # 白纸背景坐标
 centerx, centery = 0, 0                                             # 白纸背景中心坐标
@@ -39,11 +41,13 @@ p_reset = Pin('P1', Pin.IN, Pin.PULL_DOWN)
 p_start = Pin('P2', Pin.IN, Pin.PULL_DOWN)
 
 '''初始化舵机'''
-pan_servo = Servo(1) # P7
-tilt_servo = Servo(2) # P8
+tilt_servo = Servo(1) # P8竖直
+pan_servo = Servo(2) # P7水平
 # TODO：如果有时间去调
 # pan_servo.calibration(500, 2500, 500)
 # tilt_servo.calibration(500, 2500, 500)
+pan_servo.angle(pan_servo_default_angle)
+tilt_servo.angle(tilt_servo_default_angle)
 
 '''初始化摄像头'''
 sensor.reset()
@@ -138,6 +142,7 @@ def find_white_background():
     x2, y2 = int(x2 / find_background_times), int(y2 / find_background_times)
     x3, y3 = int(x3 / find_background_times), int(y3 / find_background_times)
     x4, y4 = int(x4 / find_background_times), int(y4 / find_background_times)
+    print(f'find white background: ({x1}, {y1}), ({x2}, {y2}), ({x3}, {y3}), ({x4}, {y4})')
     return x1, y1, x2, y2, x3, y3, x4, y4
 
 def calculate_pencil_line():
@@ -154,6 +159,7 @@ def calculate_pencil_line():
     img.draw_line((px2, py2, px3, py3))
     img.draw_line((px3, py3, px4, py4))
     img.draw_line((px4, py4, px1, py1))
+    print(f'calculate pencil line: ({px1}, {py1}), ({px2}, {py2}), ({px3}, {py3}), ({px4}, {py4})')
     return px1, py1, px2, py2, px3, py3, px4, py4
 
 def find_A4_rectangle():
@@ -162,7 +168,7 @@ def find_A4_rectangle():
     img = sensor.snapshot()
     for r in img.find_rects(threshold = 45000):
         img.draw_rectangle(r.rect(), color = (255, 0, 0))
-        for p in r.corners(): 
+        for p in r.corners():
             img.draw_circle(p[0], p[1], 5, color = (0, 255, 0))  #在四个角上画圆
 
     # 找到A4纸的四个角
@@ -200,10 +206,11 @@ def servo_reset():
     舵机复位，如果中心点已知，则移动到中心点，否则移动到(0, 0)
     '''
     if centerx == 0 and centery == 0:
-        pan_servo.angle()
-        tilt_servo.angle()
+        pan_servo.angle(pan_servo_default_angle)
+        tilt_servo.angle(tilt_servo_default_angle)
     else:
         move2center()
+    print('servo reset done')
 
 def wait_mode_btn():
     '''等待模式按钮，切换模式'''
@@ -215,24 +222,21 @@ def process_init():
     global centerx, centery
     global px1, py1, px2, py2, px3, py3, px4, py4
     global rx, ry
+    servo_reset() # 舵机复位
     '''初始化各global位置变量'''
     print('process initing...')
     x1, y1, x2, y2, x3, y3, x4, y4 = find_white_background()
-    print(f'find white background: ({x1}, {y1}), ({x2}, {y2}), ({x3}, {y3}), ({x4}, {y4})')
     centerx, centery = int((x1 + x2 + x3 + x4) / 4), int((y1 + y2 + y3 + y4) / 4)
     print(f'center: ({centerx}, {centery})')
     px1, py1, px2, py2, px3, py3, px4, py4 = calculate_pencil_line()
-    print(f'calculate pencil line: ({px1}, {py1}), ({px2}, {py2}), ({px3}, {py3}), ({px4}, {py4})')
     rx, ry = find_red_point()
-    print(f'find red point: ({rx}, {ry})')
     mode = ''
     print('process init done.')
-    servo_reset()
 
 '''程序入口'''
 process_init()
 
-
-move2center()
+#move2center()
 while(True):
+    find_red_point()
     pass
