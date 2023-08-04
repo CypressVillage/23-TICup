@@ -24,13 +24,13 @@ thresholds_whitebackground = [
 # (46, 79, -23, -6, -5, 5),   # 4号上午残破openmv
 #(49, 100, -128, 127, -128, 127), # 隔一段时间准
 (58, 79, -128, 127, -128, 127), # 开始几帧准
-(56, 80, -15, 4, -15, 4),
+(64, 93, -128, 127, -128, 127)
 ]
 '''常量定义'''
 corr_val = 1.6                                                     # 畸变系数
 white_background_size_min = 3000                                    # 白纸背景最小面积
-pan_servo_default_angle = 13                                         # 舵机水平方向默认角度
-tilt_servo_default_angle = -40                                      # 舵机垂直方向默认角度
+pan_servo_default_angle = 10                                         # 舵机水平方向默认角度
+tilt_servo_default_angle = -35                                      # 舵机垂直方向默认角度
 pan_servo_angle_limit = [-20, 25]
 tilt_servo_angle_limit = [-40, -20]
 '''变量定义'''
@@ -216,8 +216,8 @@ def servo_step(pan_error, tilt_error):
     #     tilt_output = 0
 
     print('delta angle(pan_output, tilt_output): ', pan_output, tilt_output)
-    delta_x = pan_servo.angle() - pan_output
-    delta_y = tilt_servo.angle() + tilt_output
+    delta_x = pan_servo.angle() + pan_output
+    delta_y = tilt_servo.angle() - tilt_output
     if pan_servo_angle_limit[0] < delta_x <= pan_servo_angle_limit[1]:
         #pan_servo.angle(delta_x, 5)
         print('x set angle:', pan_output)
@@ -291,19 +291,27 @@ def task_2():
     x1, y1, x2, y2, x3, y3, x4, y4 = calculate_pencil_line()
     trace_rectangle(x1, y1, x2, y2, x3, y3, x4, y4)
 
+def task_34():
+    x1, y1, x2, y2, x3, y3, x4, y4 = find_A4_rectangle()
+    trace_rectangle(x1, y1, x2, y2, x3, y3, x4, y4)
+
+# 手动校准
+def recorrect_white_ground(x1_, y1_, x2_, y2_, x3_, y3_, x4_, y4_):
+    global x1, y1, x2, y2, x3, y3, x4, y4
+    x1, y1, x2, y2, x3, y3, x4, y4 = x1_, y1_, x2_, y2_, x3_, y3_, x4_, y4_
+    return x1, y1, x2, y2, x3, y3, x4, y4
 
 '''程序入口'''
 process_init()
 
-#task_1()
-#task_1()
+task_1()
 #task_2()
 #tx, ty = find_red_point()
 #move2point(tx,ty-5)
 print('done')
 while(True):
-    find_white_background()
-    ##find_red_point()
+    #find_white_background()
+    #find_red_point()
     #move2center()
     pass
 
