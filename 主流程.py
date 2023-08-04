@@ -27,7 +27,7 @@ thresholds_whitebackground = [
 # (46, 79, -23, -6, -5, 5),   # 4号上午残破openmv
 #(49, 100, -128, 127, -128, 127), # 隔一段时间准
 #(58, 79, -128, 127, -128, 127), # 开始几帧准
-(67, 100, -128, 127, -128, 127)
+(61, 100, -14, 115, -68, -1)
 ]
 '''常量定义'''
 corr_val = 1.6                                                      # 畸变系数
@@ -63,8 +63,8 @@ pid_pan = PID(p=0.2, i=0.03, d=0.02, imax=90) # 舵机水平方向PID
 pid_tilt = PID(p=0.2, i=0.05, d=0.03, imax=90) # 舵机垂直方向PID
 
 '''初始化舵机'''
-pan_servo_default_angle = -40                                       # 舵机水平方向默认角度
-tilt_servo_default_angle = -55                                     # 舵机垂直方向默认角度
+pan_servo_default_angle = -52                                       # 舵机水平方向默认角度
+tilt_servo_default_angle = -49                                     # 舵机垂直方向默认角度
 pan_servo_angle_limit = [-61, -35]                                   # 舵机水平方向角度限制
 tilt_servo_angle_limit = [-64, -37]                                 # 舵机垂直方向角度限制
 pan_servo = Servo(1) # P7水平
@@ -90,12 +90,10 @@ def callback_start(line):
     print("一次中断完成2222")
 
 def callback_stop(line):
-    delay(1000)
-
+    task_1_open_circle()
     print("一次中断完成3333")
 
 def callback_black(line):
-    # delay(1000)
     task_34()
     print("一次中断完成4444")
 
@@ -374,25 +372,25 @@ def task_1_open_circle():
     '''
     任务1开环
     '''
-    pan_servo.angle(-47,100)
-    tilt_servo.angle(-44,100)
+    pan_servo.angle(-52,100)
+    tilt_servo.angle(-49,100)
 
 def task_2_open_circle():
     '''
     任务2开环
     '''
     delay(1000)
-    pan_servo.angle(-33,100)
+    pan_servo.angle(-39,100)
     delay(1000)
-    tilt_servo.angle(-57,100)
+    tilt_servo.angle(-61,100)
     delay(1000)
-    pan_servo.angle(-59.5,100)
+    pan_servo.angle(-65.5,100)
     delay(1000)
-    tilt_servo.angle(-31,100)
+    tilt_servo.angle(-36,100)
     delay(1000)
-    pan_servo.angle(-33,100)
+    pan_servo.angle(-39,100)
     delay(1000)
-    tilt_servo.angle(-57,100)
+    tilt_servo.angle(-61,100)
     delay(1000)
 
 def the_position_is_ok():
@@ -418,6 +416,7 @@ def auto_correct_program():
 process_init()
 #calculate_pencil_line()
 task_1()
+#task_2()
 #task_34()
 print('done')
 
