@@ -42,18 +42,21 @@ pid_pan = PID(p=0.07, i=0.02, d=0, imax=90) # 舵机水平方向PID
 pid_tilt = PID(p=0.07, i=0.15, d=0.02, imax=90) # 舵机垂直方向PID
 #pid_tilt = PID(p=0.03, i=0.0, d=0.0, imax=90) # 舵机垂直方向PID
 
+pid_pan = PID(p=0.03, i=0, d=0, imax=90) # 舵机水平方向PID
+pid_tilt = PID(p=0.1, i=0.1, d=0, imax=90) # 舵机垂直方向PID
+
 '''初始化按键'''
 p_reset = Pin('P1', Pin.IN, Pin.PULL_DOWN)
 p_start = Pin('P2', Pin.IN, Pin.PULL_DOWN)
 
 '''初始化舵机'''
-tilt_servo = Servo(2) # P8竖直
 pan_servo = Servo(1) # P7水平
+tilt_servo = Servo(2) # P8竖直
 # TODO：如果有时间去调
 # pan_servo.calibration(500, 2500, 500)
 # tilt_servo.calibration(500, 2500, 500)
-pan_servo.angle(pan_servo_default_angle)
-tilt_servo.angle(tilt_servo_default_angle)
+pan_servo.angle(pan_servo_default_angle, 5)
+tilt_servo.angle(tilt_servo_default_angle, 5)
 
 '''初始化摄像头'''
 sensor.reset()
@@ -113,10 +116,10 @@ def find_red_point():
                 sumx += blob[5]
                 sumy += blob[6]
             if nblob == 0: continue
-            x, y = int(sumx / nblob), int(sumy / nblob)
+            x, y = sumx / nblob, sumy / nblob
             find_point = True
     print('find red point: ', x, y)
-    img.draw_cross(x, y)
+    img.draw_cross(int(x), int(y))
     return x, y
 
 def find_white_background():
@@ -145,10 +148,10 @@ def find_white_background():
                 img.draw_rectangle(blob[0:4])
                 # print('find white background: ', blob)
 
-    x1, y1 = int(x1 / find_background_times), int(y1 / find_background_times)
-    x2, y2 = int(x2 / find_background_times), int(y2 / find_background_times)
-    x3, y3 = int(x3 / find_background_times), int(y3 / find_background_times)
-    x4, y4 = int(x4 / find_background_times), int(y4 / find_background_times)
+    x1, y1 = x1 / find_background_times, y1 / find_background_times
+    x2, y2 = x2 / find_background_times, y2 / find_background_times
+    x3, y3 = x3 / find_background_times, y3 / find_background_times
+    x4, y4 = x4 / find_background_times, y4 / find_background_times
     print(f'find white background: ({x1}, {y1}), ({x2}, {y2}), ({x3}, {y3}), ({x4}, {y4})')
     return x1, y1, x2, y2, x3, y3, x4, y4
 
@@ -156,16 +159,17 @@ def calculate_pencil_line():
     '''铅笔线是50x50，外边框是60x60，根据外边框计算铅笔线'''
     dx = (x2 - x1) / 12
     dy = (y2 - y1) / 12
-    px1, py1 = int(x1 + dx), int(y1 + dy)
-    px2, py2 = int(x2 - dx), int(y2 + dy)
-    px3, py3 = int(x3 - dx), int(y3 - dy)
-    px4, py4 = int(x4 + dx), int(y4 - dy)
+    px1, py1 = x1 + dx, y1 + dy
+    px2, py2 = x2 - dx, y2 + dy
+    px3, py3 = x3 - dx, y3 - dy
+    px4, py4 = x4 + dx, y4 - dy
     # 画
     img = sensor.snapshot()
-    img.draw_line((px1, py1, px2, py2))
-    img.draw_line((px2, py2, px3, py3))
-    img.draw_line((px3, py3, px4, py4))
-    img.draw_line((px4, py4, px1, py1))
+    # img.draw_line((px1, py1, px2, py2))
+    # # print('sep')
+    # img.draw_line((px2, py2, px3, py3))
+    # img.draw_line((px3, py3, px4, py4))
+    # img.draw_line((px4, py4, px1, py1))
     print(f'calculate pencil line: ({px1}, {py1}), ({px2}, {py2}), ({px3}, {py3}), ({px4}, {py4})')
     return px1, py1, px2, py2, px3, py3, px4, py4
 
@@ -174,9 +178,10 @@ def find_A4_rectangle():
     clock.tick()
     img = sensor.snapshot()
     for r in img.find_rects(threshold = 45000):
-        img.draw_rectangle(r.rect(), color = (255, 0, 0))
+        # img.draw_rectangle(r.rect(), color = (255, 0, 0))
         for p in r.corners():
-            img.draw_circle(p[0], p[1], 5, color = (0, 255, 0))  #在四个角上画圆
+            # img.draw_circle(p[0], p[1], 5, color = (0, 255, 0))  #在四个角上画圆
+            pass
 
     # 找到A4纸的四个角
     return r.corners()[0].x(), r.corners()[0].y(), r.corners()[1].x(), r.corners()[1].y(), r.corners()[2].x(), r.corners()[2].y(), r.corners()[3].x(), r.corners()[3].y()
@@ -194,21 +199,29 @@ def servo_step(pan_error, tilt_error):
     print('pan_error, tilt_error: ', pan_error, tilt_error)
     pan_output = pid_pan.get_pid(pan_error, 1)
     tilt_output = pid_tilt.get_pid(tilt_error, 1)
+    # if -1.5 < pan_output < 0:
+    #     pan_output = 0
+    # elif 0 < pan_output < 1.5:
+    #     pan_output = 0
+    # if -1.5 < tilt_output < 0:
+    #     tilt_output = 0
+    # elif 0 < tilt_output < 1.5:
+    #     tilt_output = 0
 
     print('delta angle(pan_output, tilt_output): ', pan_output, tilt_output)
     delta_x = pan_servo.angle() - pan_output
     delta_y = tilt_servo.angle() + tilt_output
     if pan_servo_angle_limit[0] < delta_x <= pan_servo_angle_limit[1]:
-        pan_servo.angle(delta_x)
+        pan_servo.angle(delta_x, 5)
         print('x set angle:', pan_output)
     if tilt_servo_angle_limit[0] < delta_y <= tilt_servo_angle_limit[1]:
-        tilt_servo.angle(delta_y)
+        tilt_servo.angle(delta_y, 5)
         print('y set angle:', tilt_output)
     delay(50)
 
 
-pid_x_limit = 1                                                     # PID允许的x方向误差
-pid_y_limit = 1                                                     # PID允许的y方向误差
+pid_x_limit = 2                                                     # PID允许的x方向误差
+pid_y_limit = 2                                                     # PID允许的y方向误差
 def move2point(x, y):
     '''
     让rx,ry移动到x,y
@@ -256,7 +269,7 @@ def process_init():
     '''初始化各global位置变量'''
     print('process initing...')
     x1, y1, x2, y2, x3, y3, x4, y4 = find_white_background()
-    centerx, centery = int((x1 + x2 + x3 + x4) / 4), int((y1 + y2 + y3 + y4) / 4)
+    centerx, centery = (x1 + x2 + x3 + x4) / 4, (y1 + y2 + y3 + y4) / 4
     print(f'center: ({centerx}, {centery})')
     px1, py1, px2, py2, px3, py3, px4, py4 = calculate_pencil_line()
     rx, ry = find_red_point()
