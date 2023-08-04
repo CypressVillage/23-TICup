@@ -5,7 +5,7 @@ from pid import PID
 
 '''阈值定义'''
 thresholds_redpoint_base = [
-(0, 100, 18, 62, -128, 127)
+(0, 100, 18, 62, -128, 12),
 #(48, 75, 36, 74, -15, 25), # 白板红光，方框比较小，但是不能跟踪黑色部分👍
 #(68, 86, 12, 59, -95, 112), # 4号上午实测
 #(95, 100, -5, 5, -5, 5), # 全白
@@ -13,6 +13,7 @@ thresholds_redpoint_base = [
 ]
 thresholds_redpoint_blackline = [
 (0, 100, 15, 53, -30, 40), # 3号上午黑线红点👍
+(0, 100, 5, 33, -128, 127),
 ]
 thresholds_greenpoint_base = [
 (65, 100, -79, 6, -2, 85)
@@ -22,12 +23,14 @@ thresholds_whitebackground = [
 # (48, 68, -16, 27, -20, -1), # 3号下午白板背景
 # (46, 79, -23, -6, -5, 5),   # 4号上午残破openmv
 #(49, 100, -128, 127, -128, 127), # 隔一段时间准
-(58, 79, -128, 127, -128, 127) # 开始几帧准
+(58, 79, -128, 127, -128, 127), # 开始几帧准
+(56, 80, -15, 4, -15, 4),
 ]
 '''常量定义'''
+corr_val = 1.6                                                     # 畸变系数
 white_background_size_min = 3000                                    # 白纸背景最小面积
 pan_servo_default_angle = 13                                         # 舵机水平方向默认角度
-tilt_servo_default_angle = -30                                      # 舵机垂直方向默认角度
+tilt_servo_default_angle = -40                                      # 舵机垂直方向默认角度
 pan_servo_angle_limit = [-20, 25]
 tilt_servo_angle_limit = [-40, -20]
 '''变量定义'''
@@ -38,12 +41,16 @@ rx, ry = 0, 0                                                       # 红点坐�
 mode = ''                                                           # 模式
 
 '''初始化PID'''
-pid_pan = PID(p=0.07, i=0.02, d=0, imax=90) # 舵机水平方向PID
-pid_tilt = PID(p=0.07, i=0.15, d=0.02, imax=90) # 舵机垂直方向PID
+#pid_pan = PID(p=0.07, i=0.02, d=0, imax=90) # 舵机水平方向PID
+#pid_tilt = PID(p=0.07, i=0.15, d=0.02, imax=90) # 舵机垂直方向PID
 #pid_tilt = PID(p=0.03, i=0.0, d=0.0, imax=90) # 舵机垂直方向PID
 
-pid_pan = PID(p=0.03, i=0, d=0, imax=90) # 舵机水平方向PID
-pid_tilt = PID(p=0.1, i=0.1, d=0, imax=90) # 舵机垂直方向PID
+#pid_pan = PID(p=0.1, i=0.05, d=0, imax=90) # 舵机水平方向PID
+#pid_tilt = PID(p=0.1, i=0.1, d=0, imax=90) # 舵机垂直方向PID
+
+# 4号下午5点半调参
+pid_pan = PID(p=0.1, i=0.05, d=0, imax=90) # 舵机水平方向PID
+pid_tilt = PID(p=0.1, i=0.0, d=0, imax=90) # 舵机垂直方向PID
 
 '''初始化按键'''
 p_reset = Pin('P1', Pin.IN, Pin.PULL_DOWN)
@@ -98,7 +105,7 @@ def find_red_point():
     print('finding red point')
     while not find_point:
         clock.tick() # 用于计算FPS
-        img = sensor.snapshot()
+        img = sensor.snapshot().lens_corr(corr_val)
         # 用第一种阈值找红点
         blobs = img.find_blobs(thresholds_redpoint_base)
         if blobs and blobs[0]:
@@ -131,7 +138,7 @@ def find_white_background():
     find_background_times = 0
     x1, y1, x2, y2, x3, y3, x4, y4 = 0, 0, 0, 0, 0, 0, 0 ,0
     while find_background_times < 5:
-        img = sensor.snapshot()
+        img = sensor.snapshot().lens_corr(corr_val)
         blobs = img.find_blobs(thresholds_whitebackground)
         if not blobs: continue
         for blob in blobs:
@@ -164,7 +171,7 @@ def calculate_pencil_line():
     px3, py3 = x3 - dx, y3 - dy
     px4, py4 = x4 + dx, y4 - dy
     # 画
-    img = sensor.snapshot()
+    # img = sensor.snapshot()
     # img.draw_line((px1, py1, px2, py2))
     # # print('sep')
     # img.draw_line((px2, py2, px3, py3))
@@ -176,7 +183,7 @@ def calculate_pencil_line():
 def find_A4_rectangle():
     '''找到A4纸矩形，返回矩形4点的坐标'''
     clock.tick()
-    img = sensor.snapshot()
+    img = sensor.snapshot().lens_corr(corr_val)
     for r in img.find_rects(threshold = 45000):
         # img.draw_rectangle(r.rect(), color = (255, 0, 0))
         for p in r.corners():
@@ -212,7 +219,7 @@ def servo_step(pan_error, tilt_error):
     delta_x = pan_servo.angle() - pan_output
     delta_y = tilt_servo.angle() + tilt_output
     if pan_servo_angle_limit[0] < delta_x <= pan_servo_angle_limit[1]:
-        pan_servo.angle(delta_x, 5)
+        #pan_servo.angle(delta_x, 5)
         print('x set angle:', pan_output)
     if tilt_servo_angle_limit[0] < delta_y <= tilt_servo_angle_limit[1]:
         tilt_servo.angle(delta_y, 5)
@@ -220,7 +227,7 @@ def servo_step(pan_error, tilt_error):
     delay(50)
 
 
-pid_x_limit = 2                                                     # PID允许的x方向误差
+pid_x_limit = 0                                                     # PID允许的x方向误差
 pid_y_limit = 2                                                     # PID允许的y方向误差
 def move2point(x, y):
     '''
@@ -231,6 +238,7 @@ def move2point(x, y):
     while(True):
         rx, ry = find_red_point()
         pan_error, tilt_error = rx - x, ry - y
+        pan_error = 0 # 只调y用
         if (-pid_x_limit < pan_error <= pid_x_limit) and (-pid_y_limit < tilt_error <= pid_y_limit):
             break
         servo_step(pan_error, tilt_error)
@@ -276,18 +284,28 @@ def process_init():
     mode = ''
     print('process init done.')
 
+def task_1():
+    move2center()
+
+def task_2():
+    x1, y1, x2, y2, x3, y3, x4, y4 = calculate_pencil_line()
+    trace_rectangle(x1, y1, x2, y2, x3, y3, x4, y4)
+
+
 '''程序入口'''
 process_init()
 
-
-move2center()
+#task_1()
+#task_1()
+#task_2()
 #tx, ty = find_red_point()
 #move2point(tx,ty-5)
 print('done')
-#while(True):
-    #find_white_background()
+while(True):
+    find_white_background()
     ##find_red_point()
     #move2center()
+    pass
 
 #move2center()
 #move2center()
