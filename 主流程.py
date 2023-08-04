@@ -49,7 +49,7 @@ pid_pan = PID(p=0.13, i=0, d=0, imax=90) # 舵机水平方向PID
 pid_tilt = PID(p=0.13, i=0, d=0, imax=90) # 舵机垂直方向PID
 
 '''初始化舵机'''
-pan_servo_default_angle = -50                                       # 舵机水平方向默认角度
+pan_servo_default_angle = -40                                       # 舵机水平方向默认角度
 tilt_servo_default_angle = -40                                      # 舵机垂直方向默认角度
 pan_servo_angle_limit = [-20, 25]                                   # 舵机水平方向角度限制
 tilt_servo_angle_limit = [-40, -20]                                 # 舵机垂直方向角度限制
@@ -217,8 +217,8 @@ def servo_step(pan_error, tilt_error):
     '''
 
     print('pan_error, tilt_error: ', pan_error, tilt_error)
-    pan_output = pid_pan.get_pid(pan_error, 0.1)
-    tilt_output = pid_tilt.get_pid(tilt_error, 0.1)
+    pan_output = pid_pan.get_pid(pan_error, 1)
+    tilt_output = pid_tilt.get_pid(tilt_error, 1)
     # if -1.5 < pan_output < 0:
     #     pan_output = 0
     # elif 0 < pan_output < 1.5:
@@ -231,10 +231,10 @@ def servo_step(pan_error, tilt_error):
     print('delta angle(pan_output, tilt_output): ', pan_output, tilt_output)
     delta_x = pan_servo.angle() + pan_output
     delta_y = tilt_servo.angle() - tilt_output
-    if pan_servo_angle_limit[0] < delta_x <= pan_servo_angle_limit[1]:
+    if True or pan_servo_angle_limit[0] < delta_x <= pan_servo_angle_limit[1]:
         pan_servo.angle(delta_x)
         print('x set angle:', pan_output)
-    if tilt_servo_angle_limit[0] < delta_y <= tilt_servo_angle_limit[1]:
+    if True or tilt_servo_angle_limit[0] < delta_y <= tilt_servo_angle_limit[1]:
         tilt_servo.angle(delta_y)
         print('y set angle:', tilt_output)
     delay(50)
@@ -247,25 +247,14 @@ def move2point(x, y):
     让rx,ry移动到x,y
 
     '''
-    #此处修改使得移动变为分段移动
-    step_tot = 10 #将整个目标移动分为若干段
-    step_n = 0  #临时存储用。记录当前运行到第几段了
-
-
     print('move to point: ', x, y)
-    origin_x, origin_y = find_red_point() #先找到开始运动之前的红点位置
     while(True):
         rx, ry = find_red_point()
-        target_x = (origin_x - x) / step_tot * step_n
-        target_y = (origin_y - y) / step_tot * step_n
-        pan_error = ry - target_y
-        tilt_error = rx - target_x
+        pan_error, tilt_error = rx - x, ry - y
         #pan_error = 0 # 只调y用
-        if ((-pid_x_limit < pan_error <= pid_x_limit) and (-pid_y_limit < tilt_error <= pid_y_limit)):
+        if (-pid_x_limit < pan_error <= pid_x_limit) and (-pid_y_limit < tilt_error <= pid_y_limit):
             break
         servo_step(pan_error, tilt_error)
-        if(step_n < step_tot):    
-            step_n += 1
 
 
 def trace_rectangle(x1, y1, x2, y2, x3, y3, x4, y4):
@@ -336,7 +325,7 @@ def task_2_open_circle():
     '''
     任务2开环
     '''
-    pass    
+    pass
 
 def the_position_is_ok():
     '''
@@ -350,12 +339,12 @@ def auto_correct_program():
 
     程序按照预定好的顺序运行写死的第二问，我们通过第二问的运行结果来校准中心点
     '''
-    
+
     # 识别四个角
     while(True):
         if not the_position_is_ok():
             task_2_open_circle()
-    
+
 
 '''程序入口'''
 process_init()
