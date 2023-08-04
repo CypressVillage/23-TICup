@@ -23,8 +23,8 @@ thresholds_whitebackground = [
 # (48, 68, -16, 27, -20, -1), # 3号下午白板背景
 # (46, 79, -23, -6, -5, 5),   # 4号上午残破openmv
 #(49, 100, -128, 127, -128, 127), # 隔一段时间准
-(58, 79, -128, 127, -128, 127), # 开始几帧准
-(64, 93, -128, 127, -128, 127)
+#(58, 79, -128, 127, -128, 127), # 开始几帧准
+(67, 100, -128, 127, -128, 127)
 ]
 '''常量定义'''
 corr_val = 1.6                                                      # 畸变系数
@@ -44,15 +44,19 @@ mode = ''                                                           # 模式
 #pid_pan = PID(p=0.1, i=0.05, d=0, imax=90) # 舵机水平方向PID
 #pid_tilt = PID(p=0.1, i=0.1, d=0, imax=90) # 舵机垂直方向PID
 
-# 4号下午5点半调参
-pid_pan = PID(p=0.13, i=0, d=0, imax=90) # 舵机水平方向PID
-pid_tilt = PID(p=0.13, i=0, d=0, imax=90) # 舵机垂直方向PID
+## 4号下午5点半调参
+#pid_pan = PID(p=0.17, i=0.005, d=0.001, imax=90) # 舵机水平方向PID
+#pid_tilt = PID(p=0.17, i=0.005, d=0.001, imax=90) # 舵机垂直方向PID
+
+# y调参
+pid_pan = PID(p=0.14, i=0.012, d=0.001, imax=90) # 舵机水平方向PID
+pid_tilt = PID(p=0.12, i=0.0145, d=0.001, imax=90) # 舵机垂直方向PID
 
 '''初始化舵机'''
 pan_servo_default_angle = -40                                       # 舵机水平方向默认角度
-tilt_servo_default_angle = -40                                      # 舵机垂直方向默认角度
-pan_servo_angle_limit = [-20, 25]                                   # 舵机水平方向角度限制
-tilt_servo_angle_limit = [-40, -20]                                 # 舵机垂直方向角度限制
+tilt_servo_default_angle = -50                                     # 舵机垂直方向默认角度
+pan_servo_angle_limit = [-61, -35]                                   # 舵机水平方向角度限制
+tilt_servo_angle_limit = [-64, -37]                                 # 舵机垂直方向角度限制
 pan_servo = Servo(1) # P7水平
 tilt_servo = Servo(2) # P8竖直
 # TODO：如果有时间去调
@@ -74,6 +78,23 @@ def callback_reset(line):
 
 def callback_start(line):
     delay(1000)
+    pan_servo.angle(-33,100)
+    delay(1000)
+    #tilt_servo.angle(-54,100)
+    #delay(2500)
+    #pan_servo.angle(-34,1000)
+    #delay(3000)
+    tilt_servo.angle(-57,100)
+    delay(1000)
+    pan_servo.angle(-59.5,100)
+    delay(1000)
+    tilt_servo.angle(-31,100)
+    delay(1000)
+    pan_servo.angle(-33,100)
+    delay(1000)
+    tilt_servo.angle(-57,100)
+    delay(1000)
+
 
     print("一次中断完成2222")
 
@@ -139,7 +160,7 @@ def find_red_point():
             x, y = sumx / nblob, sumy / nblob
             find_point = True
     print('find red point: ', x, y)
-    img.draw_cross(int(x), int(y))
+    #img.draw_cross(int(x), int(y))
     return x, y
 
 def find_white_background():
@@ -179,17 +200,16 @@ def calculate_pencil_line():
     '''铅笔线是50x50，外边框是60x60，根据外边框计算铅笔线'''
     dx = (x2 - x1) / 12
     dy = (y2 - y1) / 12
-    px1, py1 = x1 + dx, y1 + dy
-    px2, py2 = x2 - dx, y2 + dy
-    px3, py3 = x3 - dx, y3 - dy
-    px4, py4 = x4 + dx, y4 - dy
-    # 画
-    # img = sensor.snapshot()
-    # img.draw_line((px1, py1, px2, py2))
-    # # print('sep')
-    # img.draw_line((px2, py2, px3, py3))
-    # img.draw_line((px3, py3, px4, py4))
-    # img.draw_line((px4, py4, px1, py1))
+    px1, py1 = int(x1 + dx), int(y1 + dy)
+    px2, py2 = int(x2 - dx), int(y2 + dy)
+    px3, py3 = int(x3 - dx), int(y3 - dy)
+    px4, py4 = int(x4 + dx), int(y4 - dy)
+     #画
+    img = sensor.snapshot().lens_corr(corr_val)
+    img.draw_line((px1, py1, px2, py2))
+    img.draw_line((px2, py2, px3, py3))
+    img.draw_line((px3, py3, px4, py4))
+    img.draw_line((px4, py4, px1, py1))
     print(f'calculate pencil line: ({px1}, {py1}), ({px2}, {py2}), ({px3}, {py3}), ({px4}, {py4})')
     return px1, py1, px2, py2, px3, py3, px4, py4
 
@@ -216,7 +236,6 @@ def servo_step(pan_error, tilt_error):
     每调用一次用时100ms左右
     '''
 
-    print('pan_error, tilt_error: ', pan_error, tilt_error)
     pan_output = pid_pan.get_pid(pan_error, 1)
     tilt_output = pid_tilt.get_pid(tilt_error, 1)
     # if -1.5 < pan_output < 0:
@@ -240,8 +259,8 @@ def servo_step(pan_error, tilt_error):
     delay(50)
 
 
-pid_x_limit = 2                                                     # PID允许的x方向误差
-pid_y_limit = 2                                                     # PID允许的y方向误差
+pid_x_limit = 1.5                                                     # PID允许的x方向误差
+pid_y_limit = 1.5                                                     # PID允许的y方向误差
 def move2point(x, y):
     '''
     让rx,ry移动到x,y
@@ -255,6 +274,10 @@ def move2point(x, y):
         if (-pid_x_limit < pan_error <= pid_x_limit) and (-pid_y_limit < tilt_error <= pid_y_limit):
             break
         servo_step(pan_error, tilt_error)
+        # 多进行一步判断，输出微调后的结果
+        rx, ry = find_red_point()
+        pan_error, tilt_error = rx - x, ry - y
+        print('pan_error, tilt_error: ', pan_error, tilt_error)
 
 
 def trace_rectangle(x1, y1, x2, y2, x3, y3, x4, y4):
@@ -347,14 +370,34 @@ def auto_correct_program():
 
 
 '''程序入口'''
-process_init()
-
-task_1()
+#process_init()
+#calculate_pencil_line()
+#task_1()
 #task_2()
 #tx, ty = find_red_point()
 #move2point(tx,ty-5)
+pan_servo.angle(pan_servo_default_angle,1000)
+tilt_servo.angle(tilt_servo_default_angle,1000)
 print('done')
+#delay(1000)
+#pan_servo.angle(-33,100)
+#delay(1000)
+##tilt_servo.angle(-54,100)
+##delay(2500)
+##pan_servo.angle(-34,1000)
+##delay(3000)
+#tilt_servo.angle(-57,100)
+#delay(1000)
+#pan_servo.angle(-59.5,100)
+#delay(1000)
+#tilt_servo.angle(-31,100)
+#delay(1000)
+#pan_servo.angle(-33,100)
+#delay(1000)
+#tilt_servo.angle(-57,100)
+#delay(1000)
 while(True):
+
     #find_white_background()
     #find_red_point()
     #move2center()
