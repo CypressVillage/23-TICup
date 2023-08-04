@@ -89,8 +89,8 @@ def callback_stop(line):
     print("一次中断完成3333")
 
 def callback_black(line):
-    delay(1000)
-
+    # delay(1000)
+    task_34()
     print("一次中断完成4444")
 
 ext_reset = ExtInt(p_reset, ExtInt.IRQ_FALLING, Pin.PULL_UP, callback_reset)
@@ -201,16 +201,20 @@ def calculate_pencil_line():
 def find_A4_rectangle():
     '''找到A4纸矩形，返回矩形4点的坐标'''
     clock.tick()
+    print('finding A4 rectangle')
     rtn = []
     img = sensor.snapshot().lens_corr(corr_val)
-    for r in img.find_rects(threshold = 45000):
-        #img.draw_rectangle(r.rect(), color = (255, 0, 0))
-        # 找到A4纸的四个角
-        for p in r.corners():
-            rtn.append(p[0])
-            rtn.append(p[1])
-            #img.draw_circle(p[0], p[1], 5, color = (0, 255, 0))  #在四个角上画圆
-            #pass
+    while(True):
+        recs = img.find_rects(threshold = 45000)
+        if recs and len(recs) == 1:
+            for r in recs:
+                #img.draw_rectangle(r.rect(), color = (255, 0, 0))
+                # 找到A4纸的四个角
+                for p in r.corners():
+                    rtn.append(p[0])
+                    rtn.append(p[1])
+                    img.draw_circle(p[0], p[1], 5, color = (0, 255, 0))  #在四个角上画圆
+            break
 
     return rtn
 
@@ -362,8 +366,8 @@ def auto_correct_program():
 '''程序入口'''
 process_init()
 #calculate_pencil_line()
-#task_1()
-task_34()
+task_1()
+#task_34()
 print('done')
 
 while(True):
