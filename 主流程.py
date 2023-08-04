@@ -201,15 +201,18 @@ def calculate_pencil_line():
 def find_A4_rectangle():
     '''找到A4纸矩形，返回矩形4点的坐标'''
     clock.tick()
+    rtn = []
     img = sensor.snapshot().lens_corr(corr_val)
     for r in img.find_rects(threshold = 45000):
-        # img.draw_rectangle(r.rect(), color = (255, 0, 0))
+        #img.draw_rectangle(r.rect(), color = (255, 0, 0))
+        # 找到A4纸的四个角
         for p in r.corners():
-            # img.draw_circle(p[0], p[1], 5, color = (0, 255, 0))  #在四个角上画圆
-            pass
+            rtn.append(p[0])
+            rtn.append(p[1])
+            #img.draw_circle(p[0], p[1], 5, color = (0, 255, 0))  #在四个角上画圆
+            #pass
 
-    # 找到A4纸的四个角
-    return r.corners()[0].x(), r.corners()[0].y(), r.corners()[1].x(), r.corners()[1].y(), r.corners()[2].x(), r.corners()[2].y(), r.corners()[3].x(), r.corners()[3].y()
+    return rtn
 
 
 def servo_step(pan_error, tilt_error):
@@ -258,6 +261,7 @@ def trace_rectangle(x1, y1, x2, y2, x3, y3, x4, y4):
     move2point(x2, y2)
     move2point(x3, y3)
     move2point(x4, y4)
+    move2point(x1, y1)
 
 def move2center():
     move2point(centerx, centery)
@@ -359,12 +363,12 @@ def auto_correct_program():
 process_init()
 #calculate_pencil_line()
 #task_1()
-task_2()
-task_1()
+task_34()
 print('done')
 
 while(True):
     #find_white_background()
     #find_red_point()
+    #find_A4_rectangle()
     #move2center()
     pass
