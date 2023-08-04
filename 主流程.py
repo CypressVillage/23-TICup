@@ -24,7 +24,9 @@ thresholds_whitebackground = [
 '''常量定义'''
 white_background_size_min = 3000                                    # 白纸背景最小面积
 pan_servo_default_angle = 8                                         # 舵机水平方向默认角度
-tilt_servo_default_angle = -34                                      # 舵机垂直方向默认角度
+tilt_servo_default_angle = -37                                      # 舵机垂直方向默认角度
+pan_servo_angle_limit = [-20, 25]
+tilt_servo_angle_limit = [-40, -20]
 '''变量定义'''
 x1, y1, x2, y2, x3, y3, x4, y4 = 0, 0, 0, 0, 0, 0, 0 ,0             # 白纸背景坐标
 centerx, centery = 0, 0                                             # 白纸背景中心坐标
@@ -33,8 +35,8 @@ rx, ry = 0, 0                                                       # 红点坐�
 mode = ''                                                           # 模式
 
 '''初始化PID'''
-pid_pan = PID(p=0.1, i=0.01, imax=90) # 舵机水平方向PID
-pid_tilt = PID(p=0.1, i=0.01, imax=90) # 舵机垂直方向PID
+pid_pan = PID(p=0.07, i=0, d=0, imax=90) # 舵机水平方向PID
+pid_tilt = PID(p=0.03, i=0, d=0.00, imax=90) # 舵机垂直方向PID
 
 '''初始化按键'''
 p_reset = Pin('P1', Pin.IN, Pin.PULL_DOWN)
@@ -86,6 +88,7 @@ def find_red_point():
     x, y, sumx, sumy = 0, 0, 0, 0
     find_point = False
     blobs = []
+    print('finding red point')
     while not find_point:
         clock.tick() # 用于计算FPS
         img = sensor.snapshot()
@@ -185,11 +188,11 @@ def move2point(x, y):
     pan_error, tilt_error = rx - x, ry - y
     print('pan_error, tilt_error: ', pan_error, tilt_error)
 
-    pan_output = pid_pan.get_pid(pan_error)
-    tilt_output = pid_tilt.get_pid(tilt_error)
+    pan_output = pid_pan.get_pid(pan_error, 1)
+    tilt_output = pid_tilt.get_pid(tilt_error, 1)
 
-    pan_servo.angle(pan_servo.angle() + pan_output)
-    tilt_servo.angle(tilt_servo.angle() - tilt_output)
+    pan_servo.angle(pan_servo.angle() - pan_output)
+    tilt_servo.angle(tilt_servo.angle() + tilt_output)
     return
 
 def trace_rectangle(x1, y1, x2, y2, x3, y3, x4, y4):
@@ -236,7 +239,15 @@ def process_init():
 '''程序入口'''
 process_init()
 
-#move2center()
+
 while(True):
-    find_red_point()
-    pass
+    #process_init()
+    move2center()
+#move2center()
+#move2center()
+#move2center()
+#move2center()
+#move2center()
+
+    #find_white_background()
+    #pass
