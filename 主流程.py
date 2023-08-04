@@ -27,12 +27,8 @@ thresholds_whitebackground = [
 (64, 93, -128, 127, -128, 127)
 ]
 '''常量定义'''
-corr_val = 1.6                                                     # 畸变系数
+corr_val = 1.6                                                      # 畸变系数
 white_background_size_min = 3000                                    # 白纸背景最小面积
-pan_servo_default_angle = 18                                         # 舵机水平方向默认角度
-tilt_servo_default_angle = -35                                      # 舵机垂直方向默认角度
-pan_servo_angle_limit = [-20, 25]
-tilt_servo_angle_limit = [-40, -20]
 '''变量定义'''
 x1, y1, x2, y2, x3, y3, x4, y4 = 0, 0, 0, 0, 0, 0, 0 ,0             # 白纸背景坐标
 centerx, centery = 0, 0                                             # 白纸背景中心坐标
@@ -49,14 +45,14 @@ mode = ''                                                           # 模式
 #pid_tilt = PID(p=0.1, i=0.1, d=0, imax=90) # 舵机垂直方向PID
 
 # 4号下午5点半调参
-pid_pan = PID(p=0.13, i=0.07, d=0.005, imax=90) # 舵机水平方向PID
-pid_tilt = PID(p=0.13, i=0.07, d=0, imax=90) # 舵机垂直方向PID
-
-'''初始化按键'''
-p_reset = Pin('P1', Pin.IN, Pin.PULL_DOWN)
-p_start = Pin('P2', Pin.IN, Pin.PULL_DOWN)
+pid_pan = PID(p=0.13, i=0, d=0, imax=90) # 舵机水平方向PID
+pid_tilt = PID(p=0.13, i=0, d=0, imax=90) # 舵机垂直方向PID
 
 '''初始化舵机'''
+pan_servo_default_angle = -50                                       # 舵机水平方向默认角度
+tilt_servo_default_angle = -40                                      # 舵机垂直方向默认角度
+pan_servo_angle_limit = [-20, 25]                                   # 舵机水平方向角度限制
+tilt_servo_angle_limit = [-40, -20]                                 # 舵机垂直方向角度限制
 pan_servo = Servo(1) # P7水平
 tilt_servo = Servo(2) # P8竖直
 # TODO：如果有时间去调
@@ -64,6 +60,38 @@ tilt_servo = Servo(2) # P8竖直
 # tilt_servo.calibration(500, 2500, 500)
 pan_servo.angle(pan_servo_default_angle, 5)
 tilt_servo.angle(tilt_servo_default_angle, 5)
+
+'''初始化按键'''
+p_reset = Pin('P1', Pin.IN, Pin.PULL_UP)
+p_start = Pin('P2', Pin.IN, Pin.PULL_UP)
+p_stop = Pin('P3', Pin.IN, Pin.PULL_UP)
+p_black = Pin('P4', Pin.IN, Pin.PULL_UP)
+
+def callback_reset(line):
+    delay(1000)
+
+    print("一次中断完成1111")
+
+def callback_start(line):
+    delay(1000)
+
+    print("一次中断完成2222")
+
+def callback_stop(line):
+    delay(1000)
+
+    print("一次中断完成3333")
+
+def callback_black(line):
+    delay(1000)
+
+    print("一次中断完成4444")
+
+ext_reset = ExtInt(p_reset, ExtInt.IRQ_FALLING, Pin.PULL_UP, callback_reset)
+ext_start = ExtInt(p_start, ExtInt.IRQ_FALLING, Pin.PULL_UP, callback_start)
+ext_stop = ExtInt(p_stop, ExtInt.IRQ_FALLING, Pin.PULL_UP, callback_stop)
+ext_black = ExtInt(p_black, ExtInt.IRQ_FALLING, Pin.PULL_UP, callback_black)
+
 
 '''初始化摄像头'''
 sensor.reset()
@@ -76,21 +104,6 @@ sensor.skip_frames(20) # 丢失一些帧，等待摄像头初始化完成
 # sensor.set_auto_exposure(False, 500) # 关闭自动曝光，这个操作会导致图像变暗
 sensor.set_auto_whitebal(False) #如果使用彩图读取，则白平衡需要关闭，即sensor.set_auto_whitebal(False)
 clock = time.clock()
-
-def callback_reset(line):
-    delay(1000)
-    tilt_servo.angle(90)
-    pan_servo.angle(63)
-    print("一次中断完成1111")
-
-def callback_start(line):
-    delay(1000)
-    tilt_servo.angle(0)
-    pan_servo.angle(83)
-    print("一次中断完成2222")
-
-ext_reset = ExtInt(p_reset, ExtInt.IRQ_RISING, Pin.PULL_DOWN, callback_reset)
-ext_start = ExtInt(p_start, ExtInt.IRQ_RISING, Pin.PULL_DOWN, callback_start)
 
 
 def find_red_point():
@@ -204,8 +217,8 @@ def servo_step(pan_error, tilt_error):
     '''
 
     print('pan_error, tilt_error: ', pan_error, tilt_error)
-    pan_output = pid_pan.get_pid(pan_error, 1)
-    tilt_output = pid_tilt.get_pid(tilt_error, 1)
+    pan_output = pid_pan.get_pid(pan_error, 0.1)
+    tilt_output = pid_tilt.get_pid(tilt_error, 0.1)
     # if -1.5 < pan_output < 0:
     #     pan_output = 0
     # elif 0 < pan_output < 1.5:
@@ -235,7 +248,7 @@ def move2point(x, y):
 
     '''
     #此处修改使得移动变为分段移动
-    step_tot = 100 #将整个目标移动分为100段
+    step_tot = 10 #将整个目标移动分为若干段
     step_n = 0  #临时存储用。记录当前运行到第几段了
 
 
@@ -243,8 +256,8 @@ def move2point(x, y):
     origin_x, origin_y = find_red_point() #先找到开始运动之前的红点位置
     while(True):
         rx, ry = find_red_point()
-        target_x = (x - origin_x) / step_tot * step_n
-        target_y = (y - origin_y) / step_tot * step_n
+        target_x = (origin_x - x) / step_tot * step_n
+        target_y = (origin_y - y) / step_tot * step_n
         pan_error = ry - target_y
         tilt_error = rx - target_x
         #pan_error = 0 # 只调y用
@@ -307,11 +320,42 @@ def task_34():
     x1, y1, x2, y2, x3, y3, x4, y4 = find_A4_rectangle()
     trace_rectangle(x1, y1, x2, y2, x3, y3, x4, y4)
 
-# 手动校准
-def recorrect_white_ground(x1_, y1_, x2_, y2_, x3_, y3_, x4_, y4_):
-    global x1, y1, x2, y2, x3, y3, x4, y4
-    x1, y1, x2, y2, x3, y3, x4, y4 = x1_, y1_, x2_, y2_, x3_, y3_, x4_, y4_
-    return x1, y1, x2, y2, x3, y3, x4, y4
+# # 手动校准
+# def recorrect_white_ground(x1_, y1_, x2_, y2_, x3_, y3_, x4_, y4_):
+#     global x1, y1, x2, y2, x3, y3, x4, y4
+#     x1, y1, x2, y2, x3, y3, x4, y4 = x1_, y1_, x2_, y2_, x3_, y3_, x4_, y4_
+#     return x1, y1, x2, y2, x3, y3, x4, y4
+
+def task_1_open_circle():
+    '''
+    任务1开环
+    '''
+    pass
+
+def task_2_open_circle():
+    '''
+    任务2开环
+    '''
+    pass    
+
+def the_position_is_ok():
+    '''
+    检测是否按下确认好位置的按键
+    '''
+    pass
+
+def auto_correct_program():
+    '''
+    自动校准程序
+
+    程序按照预定好的顺序运行写死的第二问，我们通过第二问的运行结果来校准中心点
+    '''
+    
+    # 识别四个角
+    while(True):
+        if not the_position_is_ok():
+            task_2_open_circle()
+    
 
 '''程序入口'''
 process_init()
