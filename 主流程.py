@@ -57,11 +57,14 @@ mode = ''                                                           # 模式
 
 # 深夜调参
 pid_pan = PID(p=0.2, i=0.03, d=0.02, imax=90) # 舵机水平方向PID
-pid_tilt = PID(p=0.2, i=0.03, d=0.02, imax=90) # 舵机垂直方向PID
+#pid_tilt = PID(p=0.5, i=0.05, d=0.019, imax=90) # 舵机垂直方向PID，震荡34次
+#pid_tilt = PID(p=0.008, i=0.05, d=0.1, imax=90) # 舵机垂直方向PID，一段反冲
+#pid_tilt = PID(p=0.3, i=0.08, d=0.06, imax=90) # 舵机垂直方向PID，上下晃动厉害
+pid_tilt = PID(p=0.2, i=0.05, d=0.03, imax=90) # 舵机垂直方向PID
 
 '''初始化舵机'''
 pan_servo_default_angle = -40                                       # 舵机水平方向默认角度
-tilt_servo_default_angle = -50                                     # 舵机垂直方向默认角度
+tilt_servo_default_angle = -55                                     # 舵机垂直方向默认角度
 pan_servo_angle_limit = [-61, -35]                                   # 舵机水平方向角度限制
 tilt_servo_angle_limit = [-64, -37]                                 # 舵机垂直方向角度限制
 pan_servo = Servo(1) # P7水平
@@ -281,7 +284,7 @@ def servo_step(pan_error, tilt_error):
     if True or tilt_servo_angle_limit[0] < delta_y <= tilt_servo_angle_limit[1]:
         tilt_servo.angle(delta_y, 200)
         print('y set angle:', tilt_output)
-    delay(200)
+    delay(50)
 
 
 pid_x_limit = 1.5                                                     # PID允许的x方向误差
@@ -414,13 +417,13 @@ def auto_correct_program():
 '''程序入口'''
 process_init()
 #calculate_pencil_line()
-#task_1()
+task_1()
 #task_34()
 print('done')
 
 while(True):
     #find_white_background()
-    find_green_point()
+    #find_green_point()
     #find_A4_rectangle()
     #move2center()
     pass
