@@ -178,22 +178,38 @@ def find_A4_rectangle():
     return r.corners()[0].x(), r.corners()[0].y(), r.corners()[1].x(), r.corners()[1].y(), r.corners()[2].x(), r.corners()[2].y(), r.corners()[3].x(), r.corners()[3].y()
 
 
+def servo_step(pan_error, tilt_error):
+    '''
+    舵机转动一下，这里使用了pid控制
+
+    根据pan_error, tilt_error计算舵机转动的角度，然后转动一下舵机
+
+    每调用一次用时100ms左右
+    '''
+
+    print('pan_error, tilt_error: ', pan_error, tilt_error)
+    pan_output = pid_pan.get_pid(pan_error, 1)
+    tilt_output = pid_tilt.get_pid(tilt_error, 1)
+    print('delta angle(pan_output, tilt_output): ', pan_output, tilt_output)
+    pan_servo.angle(pan_servo.angle() - pan_output)
+    tilt_servo.angle(tilt_servo.angle() + tilt_output)
+    delay(50)
+
+
+pid_x_limit = 3                                                     # PID允许的x方向误差
+pid_y_limit = 3                                                     # PID允许的y方向误差
 def move2point(x, y):
     '''
     让rx,ry移动到x,y
 
     '''
-    rx, ry = find_red_point()
     print('move to point: ', x, y)
-    pan_error, tilt_error = rx - x, ry - y
-    print('pan_error, tilt_error: ', pan_error, tilt_error)
-
-    pan_output = pid_pan.get_pid(pan_error, 1)
-    tilt_output = pid_tilt.get_pid(tilt_error, 1)
-
-    pan_servo.angle(pan_servo.angle() - pan_output)
-    tilt_servo.angle(tilt_servo.angle() + tilt_output)
-    return
+    while(True):
+        rx, ry = find_red_point()
+        pan_error, tilt_error = rx - x, ry - y
+        if (-pid_x_limit < pan_error <= pid_x_limit) and (-pid_y_limit < tilt_error <= pid_y_limit):
+            break
+        servo_step(pan_error, tilt_error)
 
 def trace_rectangle(x1, y1, x2, y2, x3, y3, x4, y4):
     move2point(x1, y1)
