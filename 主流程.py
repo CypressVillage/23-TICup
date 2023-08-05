@@ -80,6 +80,9 @@ tilt_servo = Servo(2) # P8竖直
 pan_servo.angle(pan_servo_default_angle, 5)
 tilt_servo.angle(tilt_servo_default_angle, 5)
 
+flag_start = 0
+flag_black_re = 0
+
 '''初始化按键'''
 p_reset = Pin('P1', Pin.IN, Pin.PULL_UP)
 p_start = Pin('P2', Pin.IN, Pin.PULL_UP)
@@ -87,15 +90,25 @@ p_stop = Pin('P3', Pin.IN, Pin.PULL_UP)
 p_black = Pin('P4', Pin.IN, Pin.PULL_UP)
 
 def callback_reset(line):
+    global flag_start
+    flag_start = 0
+    global flag_black_re
+    flag_black_re = 0
+    global task_34_flag
+    task_34_flag = 0
     task_1_open_circle()
     #print("一次中断完成1111")
 
 def callback_start(line):
-    task_2_open_circle()
+    global flag_start
+    flag_start = 1
+    #task_2_open_circle()
     #print("一次中断完成2222")
 
 def callback_3(line):
-    task_3_open_circle()
+    global flag_black_re
+    flag_black_re = 1
+    #task_3_open_circle()
     #print("一次中断完成3333")
 
 def callback_black(line):
@@ -274,7 +287,9 @@ def servo_step(pan_error, tilt_error):
 
     每调用一次用时100ms左右
     '''
-
+    global task_34_flag
+    if task_34_flag == 0:
+        return
     pan_output = pid_pan.get_pid(pan_error, 1)
     tilt_output = pid_tilt.get_pid(tilt_error, 1)
 
@@ -310,6 +325,7 @@ def move2point(x, y):
     '''
     print('move to point: ', x, y)
     while(True):
+        if task_34_flag == 0: return
         rx, ry = find_red_point()
         pan_error, tilt_error = rx - x, ry - y
         if (-pid_x_limit <= pan_error <= pid_x_limit) and (-pid_y_limit <= tilt_error <= pid_y_limit):
@@ -454,10 +470,71 @@ delay(500)
 #task_1()
 #task_2()
 #task_34()
+
 print('done')
 task_34_flag = False
 while(True):
     if task_34_flag:
         task_34()
         task_34_flag = False
+
+    if flag_start == 1:
+        if flag_start == 1:
+            delay(500)
+        if flag_start == 1:
+            pan_servo.angle(-39,100)
+        if flag_start == 1:
+            delay(500)
+        if flag_start == 1:
+            tilt_servo.angle(-61,100)
+        if flag_start == 1:
+            delay(1000)
+        if flag_start == 1:
+            pan_servo.angle(-65.5,100)
+        if flag_start == 1:
+            delay(1000)
+        if flag_start == 1:
+            tilt_servo.angle(-36,100)
+        if flag_start == 1:
+            delay(1000)
+        if flag_start == 1:
+            pan_servo.angle(-39,100)
+        if flag_start == 1:
+            delay(1000)
+        if flag_start == 1:
+            tilt_servo.angle(-61,100)
+        if flag_start == 1:
+            delay(1000)
+        if flag_start == 1:
+            flag_start = 0
+
+    if flag_black_re == 1:
+        if flag_black_re == 1:
+            delay(1000)
+        if flag_black_re == 1:
+            pan_servo.angle(-39,100)
+        if flag_black_re == 1:
+            delay(1000)
+        if flag_black_re == 1:
+            tilt_servo.angle(-61,100)
+        if flag_black_re == 1:
+            delay(1000)
+        if flag_black_re == 1:
+            pan_servo.angle(-65.5+14.5,100)
+        if flag_black_re == 1:
+            delay(1000)
+        if flag_black_re == 1:
+            tilt_servo.angle(-36-10.5,100)
+        if flag_black_re == 1:
+            delay(1000)
+        if flag_black_re == 1:
+            pan_servo.angle(-39,100)
+        if flag_black_re == 1:
+            delay(1000)
+        if flag_black_re == 1:
+            tilt_servo.angle(-61,100)
+        if flag_black_re == 1:
+            delay(1000)
+        if flag_black_re == 1:
+            flag_black_re = 0
     # pass
