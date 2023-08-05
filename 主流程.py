@@ -56,11 +56,16 @@ mode = ''                                                           # 模式
 #pid_tilt = PID(p=0.12, i=0.0145, d=0.001, imax=90) # 舵机垂直方向PID
 
 # 深夜调参
-pid_pan = PID(p=0.2, i=0.03, d=0.02, imax=90) # 舵机水平方向PID
+#pid_pan = PID(p=0.2, i=0.03, d=0.02, imax=90) # 舵机水平方向PID
+#pid_tilt = PID(p=0.2, i=0.05, d=0.03, imax=90) # 舵机垂直方向PID
 #pid_tilt = PID(p=0.5, i=0.05, d=0.019, imax=90) # 舵机垂直方向PID，震荡34次
 #pid_tilt = PID(p=0.008, i=0.05, d=0.1, imax=90) # 舵机垂直方向PID，一段反冲
 #pid_tilt = PID(p=0.3, i=0.08, d=0.06, imax=90) # 舵机垂直方向PID，上下晃动厉害
-pid_tilt = PID(p=0.2, i=0.05, d=0.03, imax=90) # 舵机垂直方向PID
+
+
+# 5号早调参
+pid_pan = PID(p=0.15, i=0.04, d=0.02, imax=90) # 舵机水平方向PID
+pid_tilt = PID(p=0.1, i=0.05, d=0.02, imax=90) # 舵机垂直方向PID
 
 '''初始化舵机'''
 pan_servo_default_angle = -52                                       # 舵机水平方向默认角度
@@ -414,7 +419,9 @@ def auto_correct_program():
 
 '''程序入口'''
 process_init()
-#calculate_pencil_line()
+pan_servo.angle(-65,100)
+tilt_servo.angle(-36,100)
+delay(500)
 task_1()
 #task_2()
 #task_34()
