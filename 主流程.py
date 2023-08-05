@@ -64,8 +64,12 @@ mode = ''                                                           # 模式
 
 
 # 5号早调参
-pid_pan = PID(p=0.15, i=0.04, d=0.02, imax=90) # 舵机水平方向PID
-pid_tilt = PID(p=0.1, i=0.05, d=0.02, imax=90) # 舵机垂直方向PID
+#pid_pan = PID(p=0.15, i=0.04, d=0.02, imax=90) # 舵机水平方向PID
+#pid_tilt = PID(p=0.1, i=0.05, d=0.02, imax=90) # 舵机垂直方向PID
+
+# 5号下午调参
+pid_pan = PID(p=0.05, i=0.0, d=0.0, imax=90) # 舵机水平方向PID
+pid_tilt = PID(p=0.01, i=0.0, d=0.0, imax=90) # 舵机垂直方向PID
 
 '''初始化舵机'''
 pan_servo_default_angle = -52                                       # 舵机水平方向默认角度
@@ -216,7 +220,7 @@ def find_white_background():
                 y3 += blob[1] + blob[3]
                 x4 += blob[0]
                 y4 += blob[1] + blob[3]
-                img.draw_rectangle(blob[0:4])
+                # img.draw_rectangle(blob[0:4])
                 # print('find white background: ', blob)
 
     x1, y1 = x1 / find_background_times, y1 / find_background_times
@@ -235,11 +239,11 @@ def calculate_pencil_line():
     px3, py3 = int(x3 - dx), int(y3 - dy)
     px4, py4 = int(x4 + dx), int(y4 - dy)
      #画
-    img = sensor.snapshot().lens_corr(corr_val)
-    img.draw_line((px1, py1, px2, py2))
-    img.draw_line((px2, py2, px3, py3))
-    img.draw_line((px3, py3, px4, py4))
-    img.draw_line((px4, py4, px1, py1))
+    # img = sensor.snapshot().lens_corr(corr_val)
+    # img.draw_line((px1, py1, px2, py2))
+    # img.draw_line((px2, py2, px3, py3))
+    # img.draw_line((px3, py3, px4, py4))
+    # img.draw_line((px4, py4, px1, py1))
     print(f'calculate pencil line: ({px1}, {py1}), ({px2}, {py2}), ({px3}, {py3}), ({px4}, {py4})')
     return px1, py1, px2, py2, px3, py3, px4, py4
 
@@ -258,12 +262,42 @@ def find_A4_rectangle():
                 for p in r.corners():
                     rtn.append(p[0])
                     rtn.append(p[1])
-                    img.draw_circle(p[0], p[1], 5, color = (0, 255, 0))  #在四个角上画圆
+                    # img.draw_circle(p[0], p[1], 5, color = (0, 255, 0))  #在四个角上画圆
                     #pass
             break
 
     return rtn
 
+
+
+'''
+输入舵机角度关键节点，自动生成插补进行移动
+输入参数：points-舵机角度的数组,格式为[[自转轴,仰俯轴],[自转轴,仰俯轴]...]
+step_tot-每个边的分解步骤数量，数量越多越慢，但越稳定
+step_time-每个步骤的等待时间
+'''
+def servo_degress_points_to_move(points, step_tot=100, step_time=0.02):
+    loop = True
+    point_n = 0 #临时存储用。记录当前进行到第几个节点（多边形的顶点）
+    step_n = 0  #临时存储用。记录当前在一条边的哪个位置
+    last_points_num = len(points) - 1
+    while loop:
+        if point_n == last_points_num:#最后一个节点，要与第一个节点作差
+            #下面分别求自转轴和仰俯轴，在当前步骤下的过渡值
+            ro = (points[0][0] - points[last_points_num][0]) / step_tot * step_n + points[last_points_num][0]
+            api = (points[0][1] - points[last_points_num][1]) / step_tot * step_n + points[last_points_num][1]
+        else:
+            ro = (points[point_n+1][0] - points[point_n][0]) / step_tot * step_n + points[point_n][0]
+            api = (points[point_n+1][1] - points[point_n][1]) / step_tot * step_n + points[point_n][1]
+        pan_servo.angle(ro)
+        tilt_servo.angle(api)
+        step_n += 1
+        if step_n > step_tot:
+            step_n = 0
+            point_n += 1
+            if point_n > last_points_num:
+                point_n = 0
+        delay(int(step_time*1000))
 
 def servo_step(pan_error, tilt_error):
     '''
@@ -281,13 +315,14 @@ def servo_step(pan_error, tilt_error):
     print('delta angle(pan_output, tilt_output): ', pan_output, tilt_output)
     delta_x = pan_servo.angle() + pan_output
     delta_y = tilt_servo.angle() - tilt_output
-    if True or pan_servo_angle_limit[0] < delta_x <= pan_servo_angle_limit[1]:
-        pan_servo.angle(delta_x, 200)
-        print('x set angle:', pan_output)
-    if True or tilt_servo_angle_limit[0] < delta_y <= tilt_servo_angle_limit[1]:
-        tilt_servo.angle(delta_y, 200)
-        print('y set angle:', tilt_output)
-    delay(50)
+    servo_degress_points_to_move([[delta_x, delta_y]], step_tot=100, step_time=0.001)
+    # if True or pan_servo_angle_limit[0] < delta_x <= pan_servo_angle_limit[1]:
+    #     pan_servo.angle(delta_x, 200)
+    #     print('x set angle:', pan_output)
+    # if True or tilt_servo_angle_limit[0] < delta_y <= tilt_servo_angle_limit[1]:
+    #     tilt_servo.angle(delta_y, 200)
+    #     print('y set angle:', tilt_output)
+    # delay(50)
 
 def move2point_long(x, y):
     '''
@@ -445,12 +480,13 @@ def auto_correct_program():
             task_2_open_circle()
 
 
-'''程序入口'''
+#'''程序入口'''
+#pan_servo.angle(-65,100)
+#tilt_servo.angle(-36,100)
+
 process_init()
-pan_servo.angle(-65,100)
-tilt_servo.angle(-36,100)
 delay(500)
-#task_1()
+task_1()
 #task_2()
 #task_34()
 print('done')
