@@ -52,12 +52,12 @@ mode = ''                                                           # 模式
 #pid_tilt = PID(p=0.17, i=0.005, d=0.001, imax=90) # 舵机垂直方向PID
 
 # 杨神调参
-#pid_pan = PID(p=0.14, i=0.012, d=0.001, imax=90) # 舵机水平方向PID
-#pid_tilt = PID(p=0.12, i=0.0145, d=0.001, imax=90) # 舵机垂直方向PID
+pid_pan = PID(p=0.14, i=0.012, d=0.001, imax=90) # 舵机水平方向PID
+pid_tilt = PID(p=0.12, i=0.0145, d=0.001, imax=90) # 舵机垂直方向PID
 
 # 深夜调参
-pid_pan = PID(p=0.2, i=0.03, d=0.02, imax=90) # 舵机水平方向PID
-pid_tilt = PID(p=0.2, i=0.05, d=0.03, imax=90) # 舵机垂直方向PID
+# pid_pan = PID(p=0.2, i=0.03, d=0.02, imax=90) # 舵机水平方向PID
+# pid_tilt = PID(p=0.2, i=0.05, d=0.03, imax=90) # 舵机垂直方向PID
 #pid_tilt = PID(p=0.5, i=0.05, d=0.019, imax=90) # 舵机垂直方向PID，震荡34次
 #pid_tilt = PID(p=0.008, i=0.05, d=0.1, imax=90) # 舵机垂直方向PID，一段反冲
 #pid_tilt = PID(p=0.3, i=0.08, d=0.06, imax=90) # 舵机垂直方向PID，上下晃动厉害
@@ -99,7 +99,8 @@ def callback_3(line):
     #print("一次中断完成3333")
 
 def callback_black(line):
-    task_34()
+    global task_34_flag
+    task_34_flag = True
     #print("一次中断完成4444")
 
 ext_reset = ExtInt(p_reset, ExtInt.IRQ_FALLING, Pin.PULL_UP, callback_reset)
@@ -300,8 +301,8 @@ def move2point_long(x, y):
     for i in range(nsep-1):
         move2point(x + (i+1) * pan_error / nsep, y + (i+1) * tilt_error / nsep)
 
-pid_x_limit = 1.5                                                     # PID允许的x方向误差
-pid_y_limit = 1.5                                                     # PID允许的y方向误差
+pid_x_limit = 2.5                                                     # PID允许的x方向误差
+pid_y_limit = 2.5                                                     # PID允许的y方向误差
 def move2point(x, y):
     '''
     让rx,ry移动到x,y
@@ -452,12 +453,11 @@ process_init()
 delay(500)
 #task_1()
 #task_2()
-task_34()
+#task_34()
 print('done')
-
+task_34_flag = False
 while(True):
-    #find_white_background()
-    #find_green_point()
-    #find_A4_rectangle()
-    #move2center()
-    pass
+    if task_34_flag:
+        task_34()
+        task_34_flag = False
+    # pass
