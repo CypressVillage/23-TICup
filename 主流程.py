@@ -88,23 +88,23 @@ p_black = Pin('P4', Pin.IN, Pin.PULL_UP)
 
 def callback_reset(line):
     task_1_open_circle()
-    print("一次中断完成1111")
+    #print("一次中断完成1111")
 
 def callback_start(line):
     task_2_open_circle()
-    print("一次中断完成2222")
+    #print("一次中断完成2222")
 
-def callback_stop(line):
-    task_1_open_circle()
-    print("一次中断完成3333")
+def callback_3(line):
+    task_3_open_circle()
+    #print("一次中断完成3333")
 
 def callback_black(line):
     task_34()
-    print("一次中断完成4444")
+    #print("一次中断完成4444")
 
 ext_reset = ExtInt(p_reset, ExtInt.IRQ_FALLING, Pin.PULL_UP, callback_reset)
 ext_start = ExtInt(p_start, ExtInt.IRQ_FALLING, Pin.PULL_UP, callback_start)
-ext_stop = ExtInt(p_stop, ExtInt.IRQ_FALLING, Pin.PULL_UP, callback_stop)
+ext_stop = ExtInt(p_stop, ExtInt.IRQ_FALLING, Pin.PULL_UP, callback_3)
 ext_black = ExtInt(p_black, ExtInt.IRQ_FALLING, Pin.PULL_UP, callback_black)
 
 
@@ -408,6 +408,24 @@ def task_2_open_circle():
     tilt_servo.angle(-61,100)
     delay(1000)
 
+def task_3_open_circle():
+    '''
+    任务3开环
+    '''
+    delay(1000)
+    pan_servo.angle(-39,100)
+    delay(1000)
+    tilt_servo.angle(-61,100)
+    delay(1000)
+    pan_servo.angle(-65.5+14.5,100)
+    delay(1000)
+    tilt_servo.angle(-36-10.5,100)
+    delay(1000)
+    pan_servo.angle(-39,100)
+    delay(1000)
+    tilt_servo.angle(-61,100)
+    delay(1000)
+
 def the_position_is_ok():
     '''
     检测是否按下确认好位置的按键
@@ -432,7 +450,7 @@ process_init()
 pan_servo.angle(-65,100)
 tilt_servo.angle(-36,100)
 delay(500)
-task_1()
+#task_1()
 #task_2()
 #task_34()
 print('done')
