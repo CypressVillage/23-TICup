@@ -289,6 +289,16 @@ def servo_step(pan_error, tilt_error):
         print('y set angle:', tilt_output)
     delay(50)
 
+def move2point_long(x, y):
+    '''
+    让rx,ry移动到x,y
+
+    '''
+    rx, ry = find_red_point()
+    pan_error, tilt_error = x - rx, y - ry
+    nsep = 3
+    for i in range(nsep-1):
+        move2point(x + (i+1) * pan_error / nsep, y + (i+1) * tilt_error / nsep)
 
 pid_x_limit = 1.5                                                     # PID允许的x方向误差
 pid_y_limit = 1.5                                                     # PID允许的y方向误差
